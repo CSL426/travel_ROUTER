@@ -20,15 +20,17 @@
 ## 分支控制
 ### 常駐分支
 1. 程珣
-   * develope : 提供所有 feature 分支合併
-   * main (master) : 提供 release 合併 / 已上線分支
+   * master ( main ): 提供 release 合併 / 已上線分支
+   * develope : 提供穩定版本 integration 合併
+   * integration : 提供所有 feature 基於此分支開發
 
 ### 任務分支 / 測試bug 修正
 1. 程珣
     * release : 提供 develope 合併 / 上線前測試
-    * hotfix : release 、main 分支 bug 修復
+    * hotfix : release 、master 分支 bug 修復
 
-### 任務分支 / 功能開發
+### 任務分支 / 功能開發 
+--> #### <font color="#900">基於 integration 分支</font>
 1. 澎澎
     * `feature/line` : Line 端各功能開發
 2. ABBY
@@ -41,8 +43,8 @@
 5. 家偉
     * `feature/main_plan` : 情境搜尋演算法 main 建置
 6. 啓舜
-    * feature/trip : 旅遊演算法功能開發
-    * feature/main_trip : 旅遊演算法 main 建置
+    * `feature/trip` : 旅遊演算法功能開發
+    * `feature/main_trip` : 旅遊演算法 main 建置
 
 ---
 ## 資料夾樹狀圖
