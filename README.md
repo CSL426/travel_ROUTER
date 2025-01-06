@@ -30,7 +30,7 @@
     * hotfix : release 、master 分支 bug 修復
 
 ### 任務分支 / 功能開發 
---> #### <font color="#900">基於 integration 分支</font>
+#### --> 基於 integration 分支
 1. 澎澎
     * `feature/line` : Line 端各功能開發
 2. ABBY
@@ -74,4 +74,7 @@ project-root/
 * 內部內容、順序、type一定不可更動，必須符合規範 !!!
 * 各部位務必再確認接收參數的部位是否符合要求
 * 盡量使利用模組化的方式建置程式碼
-
+  
+---
+#### 分支示例
+![image](https://github.com/user-attachments/assets/df3bc631-eb14-4bb9-bf7e-420841cc77f9)
