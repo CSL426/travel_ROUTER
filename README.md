@@ -21,12 +21,12 @@
 ### 常駐分支
 1. 程珣
    * master ( main ): 提供 release 合併 / 已上線分支
-   * develope : 提供穩定版本 integration 合併
+   * develop : 提供穩定版本 integration 合併
    * integration : 提供所有 feature 基於此分支開發
 
 ### 任務分支 / 測試bug 修正
 1. 程珣
-    * release : 提供 develope 合併 / 上線前測試
+    * release : 提供 develop 合併 / 上線前測試
     * hotfix : release 、master 分支 bug 修復
 
 ### 任務分支 / 功能開發 
