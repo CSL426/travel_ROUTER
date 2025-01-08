@@ -41,10 +41,10 @@
     * `feature/SQL` : 關聯式搜尋功能開發
     * `feature/plan` : 情境搜尋演算法開發
 5. 家偉
-    * `feature/main_plan` : 情境搜尋演算法 main 建置
+    * `main/main_plan` : 情境搜尋演算法 main 建置
 6. 啓舜
     * `feature/trip` : 旅遊演算法功能開發
-    * `feature/main_trip` : 旅遊演算法 main 建置
+    * `main/main_trip` : 旅遊演算法 main 建置
 
 ---
 ## 資料夾樹狀圖
