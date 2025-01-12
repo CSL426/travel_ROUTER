@@ -27,7 +27,6 @@ def file_2_Qdrant_point(placeID: str,
                 payload= {
                     'placeID' : placeID,
                     'model_set' : model_set,
-                    'list_text': list_text
                 }  # 附加資訊
             )
         ```
@@ -47,7 +46,6 @@ def file_2_Qdrant_point(placeID: str,
     point = qdrant_manager().make_point(  placeID, 
                                     embedding_data['embedding'],
                                     embedding_data['model_set'],
-                                    embedding_data['list_text']
                                 )
     
     return point
@@ -99,7 +97,7 @@ def main():
         qdrant_obj.qdrant_upsert_data(points)
 
     # qdrant_obj.get_collections()
-    qdrant_obj.get_points(text_limit=1)
+    qdrant_obj.get_points()
 
 
 
