@@ -75,7 +75,7 @@ class qdrant_search:
         qdrant_obj = qdrant_manager(collection_name=self.colleciton_name, 
                                     qdrant_url=config.get("qdrant_url"),
                                     qdrant_api_key= config.get("qdrant_api_key"))
-        result = qdrant_obj.search_vector(vector, 0.1)
+        result = qdrant_obj.search_vector(vector, 0.5)
         return result
 
 

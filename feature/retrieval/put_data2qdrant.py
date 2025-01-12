@@ -31,7 +31,6 @@ def file_2_Qdrant_point(placeID: str,
             )
         ```
     '''
-    # file_path = f'{folder_path}/{placeID}.json'
     file_path = f'{folder_path}/{placeID}.json'
     with open(file_path, 'r', encoding='utf-8') as file:
         json_data = json.load(file)
@@ -99,6 +98,3 @@ def main():
     # qdrant_obj.get_collections()
     qdrant_obj.get_points()
 
-
-
-main()

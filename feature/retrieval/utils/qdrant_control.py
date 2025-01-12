@@ -297,13 +297,3 @@ if __name__ == "__main__":
     print("Qdrant 內目前總資料 : \n", "="*50)
     qdrant_obj.get_collections()
     # qdrant_obj.get_points(payload_key=True)
-
-
-
-
-    # 存入向量資料庫
-    # point = qdrant_obj.make_point(12312414,             # 假 placeID
-    #                               [0] * 1024,           # 1024 維的 0 向量資料
-    #                               {'model': '測試資料', 'dimensions': 1024, "task": "text-matching"}, 
-    #                             )
-    # qdrant_obj.qdrant_upsert_data(points=[point])

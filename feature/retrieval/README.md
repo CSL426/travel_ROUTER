@@ -1,25 +1,52 @@
-## 本地作業 : 
+# feature/retrival
+### 向量搜索資料庫端
+- 使用方法步驟 :
+
+    ```
+    # 1. 初始化物件
+    qdrant_obj = qdrant_search(collection_name, config) # config 要求請看物件說明文件
+        '''
+        目前設定 : score 0.5 以上都回傳 
+        最多回傳 200 個點
+        * collection_name 設定 : 看下方資料庫設定
+        * config 要求 : 請看物件內容說明
+        '''
+
+    # 2. 選擇方法
+    result = qdrant_obj.cloud_search(input_query)   # for 情境搜尋
+    result = qdrant_obj.trip_search(input_query)    # for 旅遊演算法
+
+    ```
+---
+# 資料庫設定
+- 測試資料 collection_name 設定:
+    - 兩個 collection:
+        1. `restaurant_test` ; 餐廳資料 => 30 筆
+        2. `viewpoint_test`  ; 景點資料 => 30 筆
+
+- 正式資料 collection_name 設定:
+    - 兩個 collection:
+        1. `restaurant` ; 餐廳資料 
+        2. `viewpoint`  ; 景點資料 
+
+--- 
+
+# 本地前置作業 (會動到資料庫請勿操作) : 
 1. 向量化資料
 2. 上傳雲端
 
-* #### 單一文件流程 put_data2qdrant
-1. text = 將文件格式化 json -> txt 以空白分割結合
-2. `jina-embeding(` text `)`  : 向量化資料
-3. 批量上傳 Qdrant 資料庫
+* ### 單一文件上傳流程 `put_data2qdrant.py`
+    1. text = 將文件格式化 json -> txt 以空白分割結合
+    2. `jina-embeding(` text `)`  : 向量化資料
+    3. 少量上傳 Qdrant 資料庫
 
+> ps. 非批量大數上傳 ; 判別方法是每一個文件都呼叫一次 qdrant 有沒有相同的以免重複上傳 -> 所以速度較慢
 
+> 目前設定將 main() 去除所以無法使用
 
-## feature/retrival
-1. 向量搜索資料庫端
-- 使用方法 :
+> 若想要試用看看請更換 qdrant_api_key 誤動到專題資料
 
-```
-# 初始化物件
-qdrant_obj = qdrant_search(collection_name, config) # config 要求請看物件說明文件
+* #### 資料來源 :
+> qdrant_api_key 申請 : 'https://qdrant.tech/'
 
-
-# 選擇方法
-result = qdrant_obj.cloud_search(input_query)   # for 情境搜尋
-result = qdrant_obj.trip_search(input_query)    # for 旅遊演算法
-
-```
+> jina_headers_Authorization 申請 : 'https://jina.ai/'
