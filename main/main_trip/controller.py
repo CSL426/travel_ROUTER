@@ -1,8 +1,7 @@
 from typing import Dict, List, Tuple, Union
-from feature.line import line_handler
 from feature.llm import llm_processor
-from feature.sql import sql_query
-from feature.retrieval import retrieval
+from feature.sql import csv_read
+from feature.retrieval import qdrant_search
 from feature.trip import TripPlanningSystem
 
 
@@ -31,11 +30,8 @@ class TripController:
             # 3. 取得景點詳細資料
             location_details = self._get_places(placeIDs, unique_requirement)
 
-            # 3. 規劃行程
-            trip = self._plan_trip(location_details, base_requirement)
-
-            # 4. 格式化輸出
-            return self._linebot(trip)
+            # 4. 規劃行程
+            return self._plan_trip(location_details, base_requirement)
 
         except Exception as e:
             return f"抱歉，系統發生錯誤: {str(e)}"
@@ -68,7 +64,12 @@ class TripController:
             List[Dict]: 一系列的PlaceID
         """
         # 向量檢索
-        return retrieval.filter_places(period_describe)
+
+        # input_query = {'上午': '喜歡在文青咖啡廳裡享受幽靜且美麗的裝潢'}
+        input_query = period_describe
+
+        qdrant_obj = qdrant_search()
+        return qdrant_obj.trip_search(input_query)
 
     def _get_places(self, placeIDs: List, unique_requirement: List[Dict]) -> List[Dict]:
         """
@@ -82,7 +83,16 @@ class TripController:
             List[Dict]: 景點詳細資料
         """
         # 從資料庫取得景點資料
-        return sql_query.get_places(placeIDs, unique_requirement)
+        condition_dict = placeIDs
+        detail_info = unique_requirement
+
+        # condition_dict = csv_read.load_and_sample_data(
+        #     './database/info_df.csv'
+        # )
+        # detail_info = [{'適合兒童': True, '無障礙': False, '內用座位': True}]
+
+        return csv_read.pandas_search(condition_data=condition_dict,
+                                      detail_info=detail_info)
 
     def _plan_trip(self, location_details: List[Dict], base_requirement: List[Dict]) -> List[Dict]:
         """
@@ -95,17 +105,5 @@ class TripController:
         輸出:
             Dict: 完整行程規劃
         """
-        return TripPlanningSystem().plan_trip(location_details, base_requirement)
-
-    def _linebot(self, trip: List[Dict]):
-        """
-        Line Bot輸出
-
-        輸入:
-            trip (List[Dict]): 旅遊行程
-
-        輸出:
-            Line用戶端
-        """
-
-        return line_handler.line_output(trip)
+        trip_planner = TripPlanningSystem()
+        return trip_planner.plan_trip(location_details, base_requirement)

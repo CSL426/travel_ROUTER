@@ -1,8 +1,8 @@
 from qdrant_client import QdrantClient, models
 from dotenv import dotenv_values
 
-from utils.jina_embedding import jina_embedding
-from utils.qdrant_control import qdrant_manager
+from .utils.jina_embedding import jina_embedding
+from .utils.qdrant_control import qdrant_manager
 
 class qdrant_search:
     '''
