@@ -18,16 +18,16 @@
 
     ```
 ---
-# 資料庫設定
+# 資料庫設定 
 - 測試資料 collection_name 設定:
-    - 兩個 collection:
-        1. `restaurant_test` ; 餐廳資料 => 30 筆
-        2. `viewpoint_test`  ; 景點資料 => 30 筆
+    -  collection:
+        `view_restaurant_test`  ; 景點 + 餐廳資料 => 60 筆
 
 - 正式資料 collection_name 設定:
-    - 兩個 collection:
-        1. `restaurant` ; 餐廳資料 
-        2. `viewpoint`  ; 景點資料 
+    - collection:
+        `view_restaurant` ; 景點 + 餐廳資料
+
+> 上面兩個名稱都會鎖住不能更動
 
 --- 
 

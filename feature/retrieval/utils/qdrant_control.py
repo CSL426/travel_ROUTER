@@ -36,7 +36,7 @@ class qdrant_manager:
         ```
     '''
     def __init__(   self,
-                    collection_name: str|None = 'control_collection', 
+                    collection_name: str|None = 'view_restaurant_test', 
                     qdrant_url: str = 'your_qdrant_url', 
                     qdrant_api_key: str = 'your_qdrant_api_key')-> any:
         # 加載環境變量
@@ -48,6 +48,10 @@ class qdrant_manager:
         
         # 設定控制桶子
         self.collection_name = collection_name
+        self.protected_collection = [
+                                     'view_restaurant_test',
+                                     'view_restaurant',
+                                     ]
 
 
     def get_collections(self):
@@ -138,11 +142,14 @@ class qdrant_manager:
                 print(index+1, point.id ,point.payload['placeID'])
         print("="*50)   
     
-    def delete_point(self, points_id:list[str]):
+    def delete_point(self, points_id:list[str]) -> None:
         '''
         刪除 points
         [id1, id2, id3,....] 
         '''
+        if self.collection_name in self.protected_collection:
+            print('不可以操作 default collection')
+            return 
         before_point_count = self.qdrant_client.count(collection_name=self.collection_name).count
         result = self.qdrant_client.delete(
                                             collection_name=self.collection_name,
@@ -163,6 +170,9 @@ class qdrant_manager:
         '''
         刪除桶子
         '''
+        if self.collection_name in self.protected_collection:
+            print('不可以操作 default collection')
+            return 
         
         self.qdrant_client.delete_collection(collection_name=self.collection_name)
         print(f'刪除 {self.collection_name} 成功')
@@ -184,6 +194,9 @@ class qdrant_manager:
         qdrant_manager('create_collection_name', "qdrant_url", "qdrant_api_key").create_collection()
         ```
         '''
+        if self.collection_name in self.protected_collection:
+            print('不可以操作 default collection')
+            return 
         self.qdrant_client.create_collection(
                             collection_name=self.collection_name,
                             vectors_config=models.VectorParams(size=size, distance=distance),
@@ -271,6 +284,9 @@ class qdrant_manager:
             Operation Result(UpdateResult)
         ```
         '''
+        if self.collection_name in self.protected_collection:
+            print('不可以操作 default collection')
+            return 
         before_point_count = self.qdrant_client.count(collection_name=self.collection_name).count
         # 使用 upsert 方法加入單筆資料
         result = self.qdrant_client.upsert(
