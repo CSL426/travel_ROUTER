@@ -4,12 +4,12 @@
 
     ```
     # 1. 初始化物件
-    qdrant_obj = qdrant_search(collection_name, config) # config 要求請看物件說明文件
+    qdrant_obj = qdrant_search(collection_name, config, score_threshold, limit) # config 要求請看物件說明文件
         '''
-        目前設定 : score 0.5 以上都回傳 
-        最多回傳 200 個點
         * collection_name 設定 : 看下方資料庫設定
         * config 要求 : 請看物件內容說明
+        * score_threshold : 分數限制 
+        * limit : 回傳數量限制
         '''
 
     # 2. 選擇方法
