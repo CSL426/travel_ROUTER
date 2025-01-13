@@ -34,4 +34,4 @@ def load_and_sample_data(file_path):
     return condition_dict
 
 # 使用函數
-condition_data = load_and_sample_data('info_df.csv')
+# condition_data = load_and_sample_data('info_df.csv')

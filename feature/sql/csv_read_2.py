@@ -1,6 +1,7 @@
 # 從向量搜尋跟llm那邊獲得資訊並讀取csv調度出資料(最符合的前100)
 import pandas as pd
-from sample_data_2 import load_and_sample_data
+from feature.sql.sample_data_2 import load_and_sample_data
+
 
 def pandas_search(condition_data: list[dict], detail_info: list[dict]) -> list[dict]:
     '''
@@ -13,7 +14,7 @@ def pandas_search(condition_data: list[dict], detail_info: list[dict]) -> list[d
     )
 
     # 讀取 info_df 並與 condition_data 交集形成 condition_info_df
-    info_df = pd.read_csv('info_df.csv')
+    info_df = pd.read_csv(r'C:\Users\Weiii\travel_ROUTER\feature\sql\info_df.csv')
     condition_info_df = pd.merge(condition_df, info_df, on='place_id', how='inner')
     # print("condition_info_df如下")
     # print(condition_info_df)
@@ -40,7 +41,7 @@ def pandas_search(condition_data: list[dict], detail_info: list[dict]) -> list[d
     # print(filtered_df)  # 打印當前篩選後的資料
 
     # 讀取 hours_df.csv 並根據 place_id 加入 hours 欄位於 filtered_df
-    hours_df = pd.read_csv('hours_df.csv')  # 讀取 hours_df.csv
+    hours_df = pd.read_csv(r'C:\Users\Weiii\travel_ROUTER\feature\sql\hours_df.csv')  # 讀取 hours_df.csv
     filtered_df = pd.merge(filtered_df, hours_df[['place_id', 'hours']], on='place_id', how='left')  # 根據 place_id 合併
 
     # 移除 hours 欄位為空值或為 '{}' 的資料
@@ -71,16 +72,16 @@ def pandas_search(condition_data: list[dict], detail_info: list[dict]) -> list[d
                 'url': row['url']
         })
 
-    # 將結果寫入 output.txt
-    with open('output_2.txt', 'w', encoding='utf-8') as f:
-        for record in result:
-            f.write(f"{record}\n")  # 將每個記錄寫入檔案
+    # # 將結果寫入 output.txt
+    # with open('output_2.txt', 'w', encoding='utf-8') as f:
+    #     for record in result:
+    #         f.write(f"{record}\n")  # 將每個記錄寫入檔案
 
     return result  # 返回格式化後的結果
 
 if __name__ == "__main__":
     # 使用 load_and_sample_data 函數獲取 condition_dict
-    condition_dict = load_and_sample_data('info_df.csv')
+    condition_dict = load_and_sample_data(r'C:\Users\Weiii\travel_ROUTER\feature\sql\info_df.csv')
 
     # 假設 detail_info 是從某個地方獲取的資料
     detail_info = [{'適合兒童': True, '無障礙': False, '內用座位': True}]  # 示例資料
