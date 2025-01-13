@@ -1,8 +1,10 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
     name="travel_router",
     version="0.1.0",
+    # packages=find_packages(),
+    # package_dir={"":"."},
     packages=[
         "feature",
         "feature.trip",
@@ -10,6 +12,9 @@ setup(
         "feature.retrieval",
         "feature.llm",
         "feature.line",
+        "main",
+        "main.main_trip",
+        "main.main_plan",
     ],
     install_requires=[
         "googlemaps",

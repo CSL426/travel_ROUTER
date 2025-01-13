@@ -1,4 +1,4 @@
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Tuple
 from feature.llm.LLM import LLM_Manager
 from feature.retrieval.parallel_search import ParallelSearchManager
 from feature.retrieval.qdrant_search import qdrant_search

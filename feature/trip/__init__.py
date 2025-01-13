@@ -4,7 +4,7 @@
 行程規劃模組
 匯出 TripPlanningSystem 供其他模組使用
 """
-from .src.core.planner.system import TripPlanningSystem
+from .trip import TripPlanningSystem
 
 __all__ = ['TripPlanningSystem']
 __version__ = '0.1.0'

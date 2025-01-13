@@ -2,67 +2,59 @@
 
 from dotenv import load_dotenv
 import os
-from controller import TripController
-
-
-class Config:
-    """系統設定類別
-    負責統一管理所有API金鑰和設定
-    """
-    REQUIRED_KEYS = {
-        'jina': ['jina_url', 'jina_headers_Authorization'],
-        'qdrant': ['qdrant_url', 'qdrant_api_key'],
-        'chatgpt': ['ChatGPT_api_key']
-    }
-
-    def __init__(self):
-        self.config = self._load_env()
-        self._validate_config()
-
-    def _load_env(self):
-        """載入環境變數"""
-        config = {}
-        for service in self.REQUIRED_KEYS:
-            for key in self.REQUIRED_KEYS[service]:
-                config[key] = os.getenv(key)
-        return config
-
-    def _validate_config(self):
-        """驗證設定的完整性"""
-        missing = []
-        for service, keys in self.REQUIRED_KEYS.items():
-            for key in keys:
-                if not self.config.get(key):
-                    missing.append(key)
-        if missing:
-            raise ValueError(f"缺少必要的設定: {', '.join(missing)}")
-
+from .controller import TripController
+# from main.main_trip.controller import TripController
 
 def init_config():
+    """初始化設定
+
+    載入環境變數並整理成設定字典
+
+    回傳:
+        dict: 包含所有 API 設定的字典，包括:
+            - jina_url: Jina API 端點
+            - jina_headers_Authorization: Jina 認證金鑰
+            - qdrant_url: Qdrant 伺服器位址
+            - qdrant_api_key: Qdrant 存取金鑰
+            - ChatGPT_api_key: OpenAI API 金鑰
     """
-    初始化設定，載入環境變數
-    """
+    # 直接載入環境變數，這樣在容器中也能正常運作
     load_dotenv()
-    return {
+
+    config = {
         'jina_url': os.getenv('jina_url'),
         'jina_headers_Authorization': os.getenv('jina_headers_Authorization'),
         'qdrant_url': os.getenv('qdrant_url'),
         'qdrant_api_key': os.getenv('qdrant_api_key'),
-        'ChatGPT_api_key': os.getenv('ChatGPT_api_key'),
+        'ChatGPT_api_key': os.getenv('ChatGPT_api_key')
     }
+
+    # 驗證所有設定都存在
+    missing = [key for key, value in config.items() if not value]
+    if missing:
+        raise ValueError(f"缺少必要的API設定: {', '.join(missing)}")
+
+    return config
 
 
 def run_trip_planner(text: str) -> str:
-    """
-    執行行程規劃
+    """執行行程規劃
+
+    輸入:
+        text: str - 使用者輸入的需求描述
+              例如: "想去台北文青的地方，午餐要吃美食"
+
+    回傳:
+        str - 完整的行程規劃結果
     """
     try:
-        config = Config()
+        # 初始化設定
+        config = init_config()
+        if not config:
+            raise ValueError("無法載入設定")
 
-        # 建立控制器實例
+        # 建立控制器實例並處理輸入
         controller = TripController(config)
-
-        # 處理輸入並取得結果
         result = controller.process_message(text)
 
         return result
@@ -75,9 +67,7 @@ if __name__ == "__main__":
     # 測試用輸入
     test_input = "想去台北文青的地方，吃午餐要便宜又好吃，下午想去逛有特色的景點，晚餐要可以跟朋友聚餐"
 
-    # 執行規劃
-    result = run_trip_planner(test_input)
-
-    # 輸出結果
+    # 執行規劃並輸出結果
     print("=== 行程規劃結果 ===")
+    result = run_trip_planner(test_input)
     print(result)
