@@ -8,7 +8,7 @@ class qdrant_manager:
 
         ```
         get_collections()
-        get_points(limit=10, text_limit=40)
+        get_points(limit=10)
         is_same_placeID(placeID: str) -> bool
         ```
     ---
@@ -31,12 +31,12 @@ class qdrant_manager:
         make_point( placeID: str,
                     vector: list, 
                     model_set: dict['model':str, 'dimension':int, 'task': str], 
-                    text:str) -> dict
+                ) -> dict
         qdrant_upsert_data( points: list[dict])
         ```
     '''
     def __init__(   self,
-                    collection_name: str|None = 'control_collection', 
+                    collection_name: str|None = 'collection_name', 
                     qdrant_url: str = 'your_qdrant_url', 
                     qdrant_api_key: str = 'your_qdrant_api_key')-> any:
         # 加載環境變量
@@ -48,6 +48,10 @@ class qdrant_manager:
         
         # 設定控制桶子
         self.collection_name = collection_name
+        self.protected_collection = [
+                                     'view_restaurant_test',
+                                     'view_restaurant',
+                                     ]
 
 
     def get_collections(self):
@@ -112,14 +116,13 @@ class qdrant_manager:
         return [match_data]
 
 
-    def get_points(self, limit=10, text_limit=10, payload_key=False):
+    def get_points(self, limit=10, payload_key=False):
         '''
         其中一個桶子內全部 point
 
         payload_key = 
             True : 只印payloadkeys ; 
-            False : 印出 text_list 前十值
-
+            False : 印 PlaceID
         '''
         print(f'{self.collection_name}內 總共有\
                 {self.qdrant_client.count(collection_name=self.collection_name)}\
@@ -137,15 +140,16 @@ class qdrant_manager:
             print('index', 'id                              ','placeID')
             for index, point in enumerate(scroll[0]):
                 print(index+1, point.id ,point.payload['placeID'])
-                for index_num, text in enumerate(point.payload['list_text'][:text_limit]):
-                    print(f'  評論{index_num+1} : {text}')
         print("="*50)   
     
-    def delete_point(self, points_id:list[str]):
+    def delete_point(self, points_id:list[str]) -> None:
         '''
         刪除 points
         [id1, id2, id3,....] 
         '''
+        if self.collection_name in self.protected_collection:
+            print('不可以操作 default collection')
+            return 
         before_point_count = self.qdrant_client.count(collection_name=self.collection_name).count
         result = self.qdrant_client.delete(
                                             collection_name=self.collection_name,
@@ -166,6 +170,9 @@ class qdrant_manager:
         '''
         刪除桶子
         '''
+        if self.collection_name in self.protected_collection:
+            print('不可以操作 default collection')
+            return 
         
         self.qdrant_client.delete_collection(collection_name=self.collection_name)
         print(f'刪除 {self.collection_name} 成功')
@@ -187,6 +194,9 @@ class qdrant_manager:
         qdrant_manager('create_collection_name', "qdrant_url", "qdrant_api_key").create_collection()
         ```
         '''
+        if self.collection_name in self.protected_collection:
+            print('不可以操作 default collection')
+            return 
         self.qdrant_client.create_collection(
                             collection_name=self.collection_name,
                             vectors_config=models.VectorParams(size=size, distance=distance),
@@ -199,7 +209,7 @@ class qdrant_manager:
                     placeID: str|int,
                     vector: list, 
                     model_set: dict['model':str, 'dimension':int, 'task': str], 
-                    list_text:str) -> dict:
+                ) -> dict:
         '''
         ```
         input :
@@ -209,7 +219,6 @@ class qdrant_manager:
                             'dimensions': 1024, 
                             "task": "text-matching"}
                     # embedding model set info
-            list_text = 'embedding text info' 
         ```
         ---
         #### 用法 : 
@@ -226,7 +235,6 @@ class qdrant_manager:
                     payload= {  
                         'placeID' : placeID,
                         'model_set' : model_set,
-                        'list_text': list_text
                     }  # 附加資訊
                 )
         ```
@@ -239,7 +247,6 @@ class qdrant_manager:
                     payload= { 
                         'placeID' : placeID,
                         'model_set' : model_set,
-                        'list_text': list_text
                     }  # 附加資訊
                 )
         return point
@@ -261,7 +268,6 @@ class qdrant_manager:
                 placeID = 12312414, 
                 vector = mock_1024_embedding, 
                 model_set = {'model': '測試資料', 'dimensions': 1024, "task": "text-matching"},
-                list_text = ['我是測試資料', '是一個 list_text']
             ),
             {
             "id": uuid,  # 唯一 ID
@@ -269,7 +275,6 @@ class qdrant_manager:
             "payload": {
                 'placeID' : placeID, 
                 'model_set' : { 'model': 'jina-embeddings-v3','dimensions': 1024, "task": "text-matching"},
-                'list_text': list_text 
                 }  # 附加資訊
             },
             ...,
@@ -279,6 +284,9 @@ class qdrant_manager:
             Operation Result(UpdateResult)
         ```
         '''
+        if self.collection_name in self.protected_collection:
+            print('不可以操作 default collection')
+            return 
         before_point_count = self.qdrant_client.count(collection_name=self.collection_name).count
         # 使用 upsert 方法加入單筆資料
         result = self.qdrant_client.upsert(
@@ -299,17 +307,9 @@ class qdrant_manager:
 
 
 if __name__ == "__main__":
-    import json
     config = dotenv_values("./.env")
-    qdrant_obj = qdrant_manager("example_collection", config.get("qdrant_url"), config.get("qdrant_api_key"))
+    qdrant_obj = qdrant_manager(None, config.get("qdrant_url"), config.get("qdrant_api_key"))
 
     print("Qdrant 內目前總資料 : \n", "="*50)
     qdrant_obj.get_collections()
-    qdrant_obj.get_points(payload_key=True)
-
-    # 存入向量資料庫
-    point = qdrant_obj.make_point(12312414,             # 假 placeID
-                                  [0] * 1024,           # 1024 維的 0 向量資料
-                                  {'model': '測試資料', 'dimensions': 1024, "task": "text-matching"}, 
-                                  ['我是測試資料', '是一個 list_text'])
-    qdrant_obj.qdrant_upsert_data(points=[point])
+    # qdrant_obj.get_points(payload_key=True)
