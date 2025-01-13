@@ -4,14 +4,13 @@ from dotenv import load_dotenv
 import os
 import concurrent.futures  # 引入並行處理模組
 
-
-
 class LLM_Manager:
-    def __init__(self, api_key):
-        openai.api_key = api_key
+    def __init__(self, ChatGPT_api_key):
+        openai.api_key = ChatGPT_api_key  # 使用 ChatGPT_api_key 來設定 OpenAI API 金鑰
     
-    def Query(self, prompt, user_input, format):  # 呼叫 OpenAI API，生成回應
+    def __Query(self, prompt, user_input, format):
         '''
+        使用 OpenAI API 生成回應
         format = "list" or "List[Dict]"
         '''
         response = openai.ChatCompletion.create(
@@ -28,8 +27,47 @@ class LLM_Manager:
         if format == "list":
             return json.loads(content)
         elif format == "List[Dict]":
-            # 將內容解析為字典列表格式
-            return [json.loads(content)]  # 這裡返回的是List[Dict]格式
+            return [json.loads(content)]  # 返回字典列表格式
+        
+
+    def Thinking_fun(self, user_input):
+        # 使用 ThreadPoolExecutor 來並行處理 API 請求
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            futures = {
+                'Thinking_A': executor.submit(self.__Query, system_prompt.Thinking_A, user_input, "List[Dict]"),
+                'Thinking_B': executor.submit(self.__Query, system_prompt.Thinking_B, user_input, "List[Dict]"),
+                'Thinking_C': executor.submit(self.__Query, system_prompt.Thinking_C, user_input, "List[Dict]")        
+            }
+
+            # 等待所有任務完成並取得結果
+            Thinking = []
+            for key, future in futures.items():
+                result = future.result()
+                Thinking.append(result)
+
+            return Thinking
+
+    def Cloud_fun(self, user_input):
+        # 使用 ThreadPoolExecutor 來並行處理 API 請求
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            futures = {
+                'Cloud_A': executor.submit(self.__Query, system_prompt.Cloud_A, user_input, "list"),
+                'Cloud_B': executor.submit(self.__Query, system_prompt.Cloud_B, user_input, "List[Dict]"),
+                'Cloud_C': executor.submit(self.__Query, system_prompt.Cloud_C, user_input, "List[Dict]")        
+            }
+
+            # 等待所有任務完成並取得結果
+            Cloud = []
+            for _, future in futures.items():
+                result = future.result()
+                Cloud.append(result)
+            
+            return Cloud
+
+    def store_fun(self, user_input):
+        result = self.fetch_response(system_prompt.store_recommend, user_input, "List[Dict]")
+        Store = result
+        return Store
 
 
 class system_prompt:
@@ -58,6 +96,7 @@ class system_prompt:
                     "無障礙": true|false
                 }
                 """
+    # Thinking_C "結束時間"判定會出問題,還需要修正
     Thinking_C = """
                 請根據用戶需求來判斷並提供以下行程規劃資訊，如果沒有提到某個需求，請設為 "none",並按照下列格式回傳相應結果：
                 {
@@ -91,8 +130,6 @@ class system_prompt:
                                         "url" : ""}
                             }}
                     """
-
-class system_prompt_C:
     Cloud_A = """
               根據用戶需求,生成一句簡短的敘述來形容使用者的喜好,形容客戶喜好的敘述,並使用下列格式輸出:
               [""] 
@@ -125,56 +162,16 @@ class system_prompt_C:
                 }}
                 """
 
-def fetch_response(prompt, user_input, format):
-    return LLM_obj.Query(prompt, user_input, format)
-
-def Thinking_fun(user_input):
-    # 使用 ThreadPoolExecutor 來並行處理 API 請求
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        futures = {
-            'Thinking_A': executor.submit(fetch_response, system_prompt.Thinking_A, user_input, "List[Dict]"),
-            'Thinking_B': executor.submit(fetch_response, system_prompt.Thinking_B, user_input, "List[Dict]"),
-            'Thinking_C': executor.submit(fetch_response, system_prompt.Thinking_C, user_input, "List[Dict]")        
-        }
-
-        # 等待所有任務完成並取得結果
-        Thinking = []
-        for key, future in futures.items():
-            result = future.result()
-            Thinking.append(result)
-
-        return Thinking
-
-def Cloud_fun(user_input):
-    # 使用 ThreadPoolExecutor 來並行處理 API 請求
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        futures = {
-            'Cloud_A': executor.submit(fetch_response, system_prompt_C.Cloud_A, user_input, "list"),
-            'Cloud_B': executor.submit(fetch_response, system_prompt_C.Cloud_B, user_input, "List[Dict]"),
-            'Cloud_C': executor.submit(fetch_response, system_prompt_C.Cloud_C, user_input, "List[Dict]")        
-        }
-
-        # 等待所有任務完成並取得結果
-        Cloud = []
-        for  _ , future in futures.items():
-            result = future.result()
-            Cloud.append(result)
-        
-        return Cloud
-
-def store_fun(user_input):
-    result = LLM_obj.Query(system_prompt.store_recommend, user_input, "List[Dict]")
-    Store = result
-    return Store
-
 if __name__ == "__main__":
     # 從環境變量中讀取 OpenAI API 金鑰
     load_dotenv()
-    api_key = os.getenv('OPENAI_API_KEY')
+    ChatGPT_api_key = os.getenv('ChatGPT_api_key')
 
     # 初始化物件
-    LLM_obj = LLM_Manager(api_key)
+    LLM_obj = LLM_Manager(ChatGPT_api_key)
 
     # 呼叫 Thinking 和 Cloud 的並行處理函數
-    results = Thinking_fun("文青咖啡廳,裝潢漂亮幽靜")
+    user_input = "文青咖啡廳"
+    results = LLM_obj.Thinking_fun(user_input)
+    results = LLM_obj.Cloud_fun(user_input)
     print(results)
