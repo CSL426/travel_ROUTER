@@ -87,9 +87,11 @@ class qdrant_manager:
         
         return len(result) > 0   # 若有 result 時返回 true
 
-    def search_vector(self, vector: list =[0]*1024, score_threshold: float =0.8):
+    def search_vector(self, vector: list ,score_threshold: float, limit: int):
         '''
         - 使用 vector 搜尋向量相似點
+        - limit 設定回傳上限
+        - score 設置回傳score threshhold
         - 回傳 : 
         
             ```
@@ -105,7 +107,7 @@ class qdrant_manager:
                 collection_name = self.collection_name,
                 query_vector = vector,
                 score_threshold = score_threshold,
-                limit=200,
+                limit=limit,
             )
         match_data = {}
         for point in result:
