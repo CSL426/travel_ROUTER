@@ -37,7 +37,7 @@ class qdrant_search:
     '''
     def __init__(
                 self,
-                collection_name: str= 'test1',
+                collection_name: str= 'view_restaurant',
                 config: dict = {
                                 'jina_url':str, 
                                 'jina_headers_Authorization':str,
@@ -127,7 +127,7 @@ if __name__ == "__main__":
     if len(config) == 0:
         print('please check .env path')
 
-    qdrant_obj = qdrant_search('test1', config)
+    qdrant_obj = qdrant_search('view_restaurant_test', config)
 
     # 情境搜索
     input_query = ['喜歡在文青咖啡廳裡享受幽靜且美麗的裝潢']

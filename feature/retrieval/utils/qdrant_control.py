@@ -36,7 +36,7 @@ class qdrant_manager:
         ```
     '''
     def __init__(   self,
-                    collection_name: str|None = 'view_restaurant_test', 
+                    collection_name: str|None = 'collection_name', 
                     qdrant_url: str = 'your_qdrant_url', 
                     qdrant_api_key: str = 'your_qdrant_api_key')-> any:
         # 加載環境變量
