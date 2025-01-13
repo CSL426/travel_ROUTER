@@ -23,4 +23,6 @@ def load_and_sample_data(file_path):
 
 
 # 使用函數
-condition_data = load_and_sample_data('info_df.csv')
+if __name__ == "__main__":
+    condition_data = load_and_sample_data(r'C:\Users\Weiii\travel_ROUTER\feature\sql\info_df.csv')
+    print(condition_data)

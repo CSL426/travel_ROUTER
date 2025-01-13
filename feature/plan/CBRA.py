@@ -1,21 +1,27 @@
+import sys
+import os
+
+# 添加專案根目錄到 sys.path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+
 import random
 import pandas as pd
 from geopy.distance import geodesic
 import math
 import json
-from csv_read_2 import pandas_search, load_and_sample_data
+from feature.sql import csv_read_2, sample_data_2
 
-def run_test(user_demand):
+def run_test(user_demand, require_info):  # Modified to accept two parameters
     # 讀取資料
     def load_data():
-        condition_data = load_and_sample_data('info_df.csv')
+        condition_data = sample_data_2.load_and_sample_data(r'C:\Users\Weiii\travel_ROUTER\feature\sql\info_df.csv')
         detail_info = [{'適合兒童': True, '無障礙': False, '內用座位': True}]  # 示例特殊需求
-        return pandas_search(condition_data, detail_info)
+        return csv_read_2.pandas_search(condition_data, detail_info)
 
-    # 根據 user_demand 篩選符合條件的餐廳
-    def filter_results_by_demand(results, user_demand):
+    # 根據 user_demand 和 require_info 篩選符合條件的餐廳
+    def filter_results_by_demand(results, user_demand, require_info):  # Modified to accept require_info
         filtered_results = []
-        condition_hours = pd.read_csv('transformed_df.csv')
+        condition_hours = pd.read_csv(r'C:\Users\Weiii\travel_ROUTER\feature\plan\transformed_df.csv')
 
         for condition in results:
             print(f"檢查餐廳: {condition.get('name', '未知')}")
@@ -45,6 +51,8 @@ def run_test(user_demand):
             if week_matches.empty:
                 print(f"跳過 {condition.get('name', '未知')} 星期別不符合")
                 continue
+            week_matches = week_matches[week_matches['start_time'] != 'none']
+            week_matches = week_matches[week_matches['end_time'] != 'none']
 
             week_matches['start_time'] = week_matches['start_time'].astype(str).str.split(':').str[0].astype(int)
             week_matches['end_time'] = week_matches['end_time'].astype(str).str.split(':').str[0].astype(int)
@@ -70,6 +78,9 @@ def run_test(user_demand):
                 print(f"跳過 {condition.get('name', '未知')} 距離超出")
                 continue
 
+            # Add additional filtering based on require_info if needed
+            # ...
+
             filtered_results.append(condition)
         return filtered_results
 
@@ -84,7 +95,7 @@ def run_test(user_demand):
     # 計算分數
     def calculate_scores(results):
         if not results:
-            return []  # Return empty list if no results
+            return []
 
         distances = [condition['distance'] for condition in results]
         min_distance = min(distances) if distances else 0
@@ -128,52 +139,43 @@ def run_test(user_demand):
     data = load_data()
     results = data
 
-    filtered_results = filter_results_by_demand(results, user_demand)
+    filtered_results = filter_results_by_demand(results, user_demand, require_info)  # Modified to pass require_info
     scored_results = calculate_scores(filtered_results)
     final_results = calculate_total_score(scored_results)
 
     sorted_results = sorted(final_results, key=lambda x: x.get('total_score',0), reverse=True)[:15]
 
-    output_list = [] #新增輸出list
+    output_list = []
     for condition in sorted_results:
-        output_dict = { #建立新的dict,包含所有需要的欄位
+        output_dict = {
             'place_id': condition.get('place_id'),
             'name': condition.get('name'),
             'rating': condition.get('rating'),
-            'num_comments': condition.get('num_comments'), #改成評論(石頭)
-            # 'lon': condition.get('lon'),
-            # 'lat': condition.get('lat'),
+            'num_comments': condition.get('num_comments'),
             'avg_cost': condition.get('avg_cost'),
             'label_type': condition.get('label_type'),
-            # 'label': condition.get('label'),
             'hours': condition.get('hours'),
-            # 'match_score': condition.get('match_score'),
-            # 'url': condition.get('url'),
-            # 'price_score': condition.get('price_score'),
-            # 'distance_score': condition.get('distance_score'),
-            # 'rating_score': condition.get('rating_score'),
-            # 'match_score': condition.get('match_score'),
-            # 'total_score': condition.get('total_score')
+            'total_score': condition.get('total_score')
         }
         output_list.append(output_dict)
 
     with open('test.txt', 'w', encoding='utf-8-sig') as f:
-        for condition in output_list: #寫入檔案改為output_list
+        for condition in output_list:
             f.write(f"{condition['name']}: {condition}\n")
 
     print("篩選結果已輸出至 test.txt。")
     print("推薦如下：")
-    for condition in output_list: #印出結果改為output_list
+    for condition in output_list:
         print(f"{condition['name']}: 總分 {condition['total_score']}")
 
-    return output_list #回傳list
+    return output_list
 
 # 執行測試函數
 if __name__ == "__main__":
     # 直接帶入 user_demand
     user_demand = {
         '星期別': 5,
-        '時間': '12:00', #時間可以維持字串
+        '時間': '12:00',
         '類別': '餐廳',
         '預算': 300,
         '出發地': (24.79824463059828, 121.58730583548193),
@@ -181,12 +183,16 @@ if __name__ == "__main__":
         '交通類別': '開車'
     }
 
+    require_info = {
+        # Add any required info parameters here
+    }
+
     # 使用 load_and_sample_data 函數獲取 condition_dict
-    condition_dict = load_and_sample_data('info_df.csv')
+    condition_dict = sample_data_2.load_and_sample_data(r'C:\Users\Weiii\travel_ROUTER\feature\sql\info_df.csv')
 
     # 執行 pandas_search
-    result = pandas_search(condition_dict, [user_demand])  # 將 user_demand 傳入
+    result = csv_read_2.pandas_search(condition_dict, [user_demand])
     print("result如下")
     print(result[1])
 
-    sorted_results = run_test(user_demand) # 呼叫run_test並傳入user_demand
+    sorted_results = run_test(user_demand, require_info)  # Modified to pass both parameters
