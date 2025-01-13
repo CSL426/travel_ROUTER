@@ -2,10 +2,11 @@ import os
 from dotenv import load_dotenv
 from linebot import LineBotApi
 from linebot.models import FlexSendMessage, CarouselContainer, BubbleContainer
-from First_bubble import First
-from Second_bubble import Second
-from Third_bubble import Third
-from Fourth_bubble import Fourth
+
+from bubbles_seting.First_bubble import First
+from bubbles_seting.Second_bubble import Second
+from bubbles_seting.Third_bubble import Third
+# from bubbles_seting.Fourth_bubble import Fourth
 
 load_dotenv()
 
@@ -74,7 +75,7 @@ carousel = {
         First(data),  # 呼叫 First_bubble 函數來獲取 bubble
         Second(data),  # 呼叫 Second_bubble 函數來獲取 bubble
         Third(data),  # 呼叫 Third_bubble 函數來獲取 bubble
-        Fourth()  # 呼叫 Fourth_bubble 函數來獲取 bubble
+        # Fourth()  # 暫不使用,呼叫 Fourth_bubble 函數來獲取 bubble
     ]
 }
 
