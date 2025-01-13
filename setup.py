@@ -17,7 +17,7 @@ setup(
         "pydantic",
         "requests",
         "python-dotenv",
-        "openai",
+        "openai==0.28",
         "qdrant-client",
     ],
     python_requires=">=3.12",

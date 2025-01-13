@@ -1,12 +1,31 @@
 from typing import Dict, List, Tuple, Union
-from feature.llm import llm_processor
+from feature.llm.LLM import LLM_Manager
+from feature.retrieval.parallel_search import ParallelSearchManager
+from feature.retrieval.qdrant_search import qdrant_search
 from feature.sql import csv_read
-from feature.retrieval import qdrant_search
 from feature.trip import TripPlanningSystem
+from concurrent.futures import ThreadPoolExecutor
 
 
 class TripController:
     """行程規劃系統控制器"""
+
+    def __init__(self, config: dict):
+        """
+        初始化控制器
+
+        輸入:
+            config: dict，包含所需的所有設定
+                - jina_url: Jina AI 的 URL
+                - jina_headers_Authorization: Jina 認證金鑰
+                - qdrant_url: Qdrant 資料庫 URL
+                - qdrant_api_key: Qdrant API 金鑰
+                - ChatGPT_api_key: ChatGPT API 金鑰
+        """
+        self.config = config
+        self.llm_manager = LLM_Manager(config)
+        self.search_manager = ParallelSearchManager(config)
+        self.trip_planner = TripPlanningSystem()
 
     def process_message(self, input_text: str) -> str:
         """
@@ -50,60 +69,94 @@ class TripController:
                 - List[Dict]: 特殊需求 (對應圖中的 'b')
                 - List[Dict[str, Union[int, str, None]]]: 客戶基本要求 (對應圖中的 'c')
         """
-        # 假設 llm_processor.analyze 會回傳三個結果
-        return llm_processor.analyze(text)
+        # 假設會回傳三個結果
+        LLM_obj = LLM_Manager(config=self.config)
+        return LLM_obj.Thinking_fun(text)
 
-    def _vector_retrieval(self, period_describe: Dict) -> List[Dict]:
+    def _vector_retrieval(self, period_describe: List[Dict]) -> Dict:
         """
-        由形容客戶行程的一(五)句話，找出相關景點ID
+        平行處理多個時段的向量搜尋
 
         輸入:
-            period_describe (Dict): 形容客戶行程的一(五)句話
+            period_describe: List[Dict] 
+                各時段的描述，例如：
+                [
+                    {'早上': '文青咖啡廳描述'},
+                    {'午餐': '餐廳描述'}
+                ]
 
         輸出:
-            List[Dict]: 一系列的PlaceID
+            Dict: 各時段對應的景點ID
+                {
+                    '早上': ['id1', 'id2', ...],
+                    '午餐': ['id3', 'id4', ...]
+                }
         """
-        # 向量檢索
+        try:
+            # 建立 qdrant_search 實例
+            qdrant_obj = qdrant_search(
+                collection_name='view_restaurant_test',
+                config=self.config
+            )
 
-        # input_query = {'上午': '喜歡在文青咖啡廳裡享受幽靜且美麗的裝潢'}
-        input_query = period_describe
+            # 使用 ThreadPoolExecutor 進行平行處理
+            results = {}
+            with ThreadPoolExecutor() as executor:
+                future_to_query = {
+                    executor.submit(qdrant_obj.trip_search, query): query
+                    for query in period_describe
+                }
 
-        qdrant_obj = qdrant_search()
-        return qdrant_obj.trip_search(input_query)
+                for future in future_to_query:
+                    try:
+                        result = future.result()
+                        results.update(result)
+                    except Exception as e:
+                        print(f"搜尋過程發生錯誤: {str(e)}")
+                        continue
 
-    def _get_places(self, placeIDs: List, unique_requirement: List[Dict]) -> List[Dict]:
+            return results
+
+        except Exception as e:
+            raise Exception(f"向量搜尋發生錯誤: {str(e)}")
+
+    def _get_places(self, placeIDs: Dict, unique_requirement: List[Dict]) -> List[Dict]:
         """
-        根據意圖PlaceID和特殊需求，從資料庫中找出景點詳細資料
+        從資料庫取得景點詳細資料
 
         輸入:
-            placeIDs (List): 初步篩選出的PlaceID
-            unique_requirement (List[Dict]): 用戶的特殊需求
+            placeIDs: Dict 
+                各時段的景點ID，格式如：
+                {
+                    '上午': ['id1', 'id2'],
+                    '午餐': ['id3', 'id4']
+                }
+            unique_requirement: List[Dict]
+                使用者的特殊需求，例如：
+                [{'無障礙': True, '適合兒童': True}]
 
         輸出:
-            List[Dict]: 景點詳細資料
+            List[Dict]: 景點的詳細資料列表
         """
-        # 從資料庫取得景點資料
-        condition_dict = placeIDs
-        detail_info = unique_requirement
+        unique_requirement = [{'無障礙': False}]
 
-        # condition_dict = csv_read.load_and_sample_data(
-        #     './database/info_df.csv'
-        # )
-        # detail_info = [{'適合兒童': True, '無障礙': False, '內用座位': True}]
+        return csv_read.pandas_search(
+            condition_data=placeIDs,
+            detail_info=unique_requirement
+        )
 
-        return csv_read.pandas_search(condition_data=condition_dict,
-                                      detail_info=detail_info)
-
-    def _plan_trip(self, location_details: List[Dict], base_requirement: List[Dict]) -> List[Dict]:
+    def _plan_trip(self, location_details: List[Dict], base_requirement: List[Dict]) -> str:
         """
-        規劃行程
+        根據景點資料和基本需求規劃行程
 
         輸入:
-            location_details (List[Dict]): 景點詳細資料
-            base_requirement (List[Dict]): 客戶基本要求
+            location_details: List[Dict] 
+                景點詳細資料列表
+            base_requirement: List[Dict]
+                基本需求，如時間、交通方式等
 
         輸出:
-            Dict: 完整行程規劃
+            str: 格式化的行程規劃結果
         """
-        trip_planner = TripPlanningSystem()
-        return trip_planner.plan_trip(location_details, base_requirement)
+        # 使用已初始化的 trip_planner
+        return self.trip_planner.plan_trip(location_details, base_requirement)

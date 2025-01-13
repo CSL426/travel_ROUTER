@@ -12,6 +12,8 @@ class qdrant_search:
 
         ```
         collection_name = 想要搜尋的桶子名稱
+        score_threshold = 分數限制 
+        limit = 回傳數量限制
         config = {
                     'jina_url':str, 
                     'jina_headers_Authorization':str,
@@ -38,6 +40,8 @@ class qdrant_search:
     def __init__(
                 self,
                 collection_name: str= 'view_restaurant',
+                score_threshold: float=0,
+                limit: int=1000,
                 config: dict = {
                                 'jina_url':str, 
                                 'jina_headers_Authorization':str,
@@ -48,6 +52,8 @@ class qdrant_search:
         
         self.colleciton_name = collection_name
         self.config = config
+        self.score_threshold = score_threshold
+        self.limit = limit
         
 
 
@@ -75,7 +81,7 @@ class qdrant_search:
         qdrant_obj = qdrant_manager(collection_name=self.colleciton_name, 
                                     qdrant_url=config.get("qdrant_url"),
                                     qdrant_api_key= config.get("qdrant_api_key"))
-        result = qdrant_obj.search_vector(vector, 0.5)
+        result = qdrant_obj.search_vector(vector, self.score_threshold, self.limit)
         return result
 
 
@@ -127,7 +133,10 @@ if __name__ == "__main__":
     if len(config) == 0:
         print('please check .env path')
 
-    qdrant_obj = qdrant_search('view_restaurant_test', config)
+    qdrant_obj = qdrant_search(collection_name= 'view_restaurant_test', 
+                               config= config,
+                               score_threshold= 0,
+                               limit=50)
 
     # 情境搜索
     input_query = ['喜歡在文青咖啡廳裡享受幽靜且美麗的裝潢']
@@ -138,3 +147,4 @@ if __name__ == "__main__":
     # result = qdrant_obj.trip_search(input_query)
 
     print(result)
+    print(len(result[0]))

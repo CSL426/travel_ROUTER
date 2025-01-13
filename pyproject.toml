@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "travel-router"
+version = "0.1.0"
+description = ""
+authors = ["CSL426 <spark.cs.liao@gmail.com>"]
+packages = [
+    {include = "feature"}, 
+    {include = "main"},
+    {include = "database"}
+]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+googlemaps = "^4.10.0"
+pandas = "^2.2.3"
+pydantic = "^2.10.5"
+requests = "^2.32.3"
+python-dotenv = "^1.0.1"
+openai = "0.28"
+qdrant-client = "^1.12.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
