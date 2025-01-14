@@ -1,13 +1,32 @@
-from typing import Dict, List, Tuple, Union
-from feature.line import line_handler
-from feature.llm import llm_processor
-from feature.sql import sql_query
-from feature.retrieval import retrieval
+import os
+from dotenv import load_dotenv
+from typing import Dict, List, Tuple
+from concurrent.futures import ThreadPoolExecutor
+
+from feature.llm.LLM import LLM_Manager
+from feature.retrieval.parallel_search import ParallelSearchManager
+from feature.retrieval.qdrant_search import qdrant_search
+from feature.sql import csv_read
 from feature.trip import TripPlanningSystem
 
 
 class TripController:
     """行程規劃系統控制器"""
+
+    def __init__(self, config: dict):
+        """
+        初始化控制器
+
+        輸入:
+            config: dict，包含所需的所有設定
+                - jina_url: Jina AI 的 URL
+                - jina_headers_Authorization: Jina 認證金鑰
+                - qdrant_url: Qdrant 資料庫 URL
+                - qdrant_api_key: Qdrant API 金鑰
+                - ChatGPT_api_key: ChatGPT API 金鑰
+        """
+        self.config = config
+        self.trip_planner = TripPlanningSystem()
 
     def process_message(self, input_text: str) -> str:
         """
@@ -31,18 +50,14 @@ class TripController:
             # 3. 取得景點詳細資料
             location_details = self._get_places(placeIDs, unique_requirement)
 
-            # 3. 規劃行程
-            trip = self._plan_trip(location_details, base_requirement)
-
-            # 4. 格式化輸出
-            return self._linebot(trip)
+            # 4. 規劃行程
+            return self._plan_trip(location_details, base_requirement)
 
         except Exception as e:
             return f"抱歉，系統發生錯誤: {str(e)}"
 
     def _analyze_intent(self, text: str) -> Tuple[List[Dict], List[Dict], List[Dict]]:
         """
-        From Abby:
         分析使用者意圖
 
         輸入:
@@ -54,58 +69,150 @@ class TripController:
                 - List[Dict]: 特殊需求 (對應圖中的 'b')
                 - List[Dict[str, Union[int, str, None]]]: 客戶基本要求 (對應圖中的 'c')
         """
-        # 假設 llm_processor.analyze 會回傳三個結果
-        return llm_processor.analyze(text)
+        LLM_obj = LLM_Manager(self.config['ChatGPT_api_key'])
 
-    def _vector_retrieval(self, period_describe: Dict) -> List[Dict]:
+        return LLM_obj.Thinking_fun(text)
+
+    def _vector_retrieval(self, period_describe: List[Dict]) -> Dict:
         """
-        由形容客戶行程的一(五)句話，找出相關景點ID
+        平行處理多個時段的向量搜尋
 
         輸入:
-            period_describe (Dict): 形容客戶行程的一(五)句話
+            period_describe: List[Dict] 
+                各時段的描述，例如：
+                [
+                    {'上午': '文青咖啡廳描述'},
+                    {'中餐': '餐廳描述'}
+                ]
 
         輸出:
-            List[Dict]: 一系列的PlaceID
+            Dict: 各時段對應的景點ID
+                {
+                    '上午': ['id1', 'id2', ...],
+                    '中餐': ['id3', 'id4', ...]
+                }
         """
-        # 向量檢索
-        return retrieval.filter_places(period_describe)
+        try:
+            # 建立 qdrant_search 實例
+            qdrant_obj = qdrant_search(
+                collection_name='view_restaurant_test',
+                config=self.config,
+                score_threshold=0.5,
+                limit=30
+            )
+            # period_describe = [
+            #     {'上午': '喜歡在文青咖啡廳裡享受幽靜且美麗的裝潢'},
+            #     {'中餐': '好吃很辣便宜加飯附湯環境整潔很多人可以停車'},
+            #     {'下午': '充滿歷史感的日式建築'},
+            #     {'晚餐': '適合多人聚餐的餐廳'},
+            #     {'晚上': '可以看夜景的地方'}
+            # ]
 
-    def _get_places(self, placeIDs: List, unique_requirement: List[Dict]) -> List[Dict]:
+            # 使用 ThreadPoolExecutor 進行平行處理
+            results = {}
+            with ThreadPoolExecutor() as executor:
+                future_to_query = {
+                    executor.submit(qdrant_obj.trip_search, query): query
+                    for query in period_describe
+                }
+
+                for future in future_to_query:
+                    try:
+                        result = future.result()
+                        results.update(result)
+                    except Exception as e:
+                        print(f"搜尋過程發生錯誤: {str(e)}")
+                        continue
+
+            return results
+
+        except Exception as e:
+            raise Exception(f"向量搜尋發生錯誤: {str(e)}")
+
+    def _get_places(self, placeIDs: Dict, unique_requirement: List[Dict]) -> List[Dict]:
         """
-        根據意圖PlaceID和特殊需求，從資料庫中找出景點詳細資料
+        從資料庫取得景點詳細資料
 
         輸入:
-            placeIDs (List): 初步篩選出的PlaceID
-            unique_requirement (List[Dict]): 用戶的特殊需求
+            placeIDs: Dict 
+                各時段的景點ID，格式如：
+                {
+                    '上午': ['id1', 'id2'],
+                    '中餐': ['id3', 'id4']
+                }
+            unique_requirement: List[Dict]
+                使用者的特殊需求，例如：
+                [{'無障礙': True, '適合兒童': True}]
 
         輸出:
-            List[Dict]: 景點詳細資料
+            List[Dict]: 景點的詳細資料列表
         """
-        # 從資料庫取得景點資料
-        return sql_query.get_places(placeIDs, unique_requirement)
+        unique_requirement = [{'無障礙': False}]
 
-    def _plan_trip(self, location_details: List[Dict], base_requirement: List[Dict]) -> List[Dict]:
+        return csv_read.pandas_search(
+            condition_data=placeIDs,
+            detail_info=unique_requirement
+        )
+
+    def _plan_trip(self, location_details: List[Dict], base_requirement: List[Dict]) -> str:
         """
-        規劃行程
+        根據景點資料和基本需求規劃行程
 
         輸入:
-            location_details (List[Dict]): 景點詳細資料
-            base_requirement (List[Dict]): 客戶基本要求
+            location_details: List[Dict] 
+                景點詳細資料列表
+            base_requirement: List[Dict]
+                基本需求，如時間、交通方式等
 
         輸出:
-            Dict: 完整行程規劃
+            str: 格式化的行程規劃結果
         """
-        return TripPlanningSystem().plan_trip(location_details, base_requirement)
+        # 使用已初始化的 trip_planner
+        return self.trip_planner.plan_trip(location_details, base_requirement)
 
-    def _linebot(self, trip: List[Dict]):
-        """
-        Line Bot輸出
 
-        輸入:
-            trip (List[Dict]): 旅遊行程
+def init_config():
+    """初始化設定
 
-        輸出:
-            Line用戶端
-        """
+    載入環境變數並整理成設定字典
 
-        return line_handler.line_output(trip)
+    回傳:
+        dict: 包含所有 API 設定的字典，包括:
+            - jina_url: Jina API 端點
+            - jina_headers_Authorization: Jina 認證金鑰
+            - qdrant_url: Qdrant 伺服器位址
+            - qdrant_api_key: Qdrant 存取金鑰
+            - ChatGPT_api_key: OpenAI API 金鑰
+    """
+    # 直接載入環境變數，這樣在容器中也能正常運作
+    load_dotenv()
+
+    config = {
+        'jina_url': os.getenv('jina_url'),
+        'jina_headers_Authorization': os.getenv('jina_headers_Authorization'),
+        'qdrant_url': os.getenv('qdrant_url'),
+        'qdrant_api_key': os.getenv('qdrant_api_key'),
+        'ChatGPT_api_key': os.getenv('ChatGPT_api_key')
+    }
+
+    # 驗證所有設定都存在
+    missing = [key for key, value in config.items() if not value]
+    if missing:
+        raise ValueError(f"缺少必要的API設定: {', '.join(missing)}")
+
+    return config
+
+
+if __name__ == "__main__":
+    try:
+        config = init_config()
+        controller_instance = TripController(config)
+
+        test_input = "想去台北文青的地方，吃午餐要便宜又好吃，下午想去逛有特色的景點，晚餐要可以跟朋友聚餐"
+        result = controller_instance.process_message(test_input)
+        controller_instance.trip_planner.print_itinerary(
+            result,
+        )
+
+    except Exception as e:
+        print("DEBUG: ", str(e))  # 完整錯誤訊息

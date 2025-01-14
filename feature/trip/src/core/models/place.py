@@ -225,9 +225,9 @@ class PlaceDetail(BaseModel):
         """檢查當前時間是否適合遊玩此地點
 
         根據用餐時間劃分時段：
-        - 午餐時間前是早上的行程
-        - 午餐時間前後一小時是午餐行程
-        - 午餐後是下午行程
+        - 中餐時間前是上午的行程
+        - 中餐時間前後一小時是中餐行程
+        - 中餐後是下午行程
         - 晚餐時間前後一小時是晚餐行程
         - 晚餐後是晚上行程
 
@@ -240,7 +240,7 @@ class PlaceDetail(BaseModel):
         from src.core.services.time_service import TimeService
 
         time_service = TimeService(
-            lunch_time="12:00",   # 預設午餐時間
+            lunch_time="12:00",   # 預設中餐時間
             dinner_time="18:00"   # 預設晚餐時間
         )
 

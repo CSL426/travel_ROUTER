@@ -3,7 +3,7 @@
 from dotenv import load_dotenv
 import os
 
-from .controller import TripController
+from main.main_trip.controller import TripController
 
 
 def init_config():
@@ -59,6 +59,9 @@ def run_trip_planner(text: str) -> str:
         print("DEBUG: TripController created")
 
         result = controller_instance.process_message(text)
+        controller_instance.trip_planner.print_itinerary(
+            result,
+        )
         return result
 
     except Exception as e:
@@ -69,4 +72,3 @@ def run_trip_planner(text: str) -> str:
 if __name__ == "__main__":
     test_input = "想去台北文青的地方，吃午餐要便宜又好吃，下午想去逛有特色的景點，晚餐要可以跟朋友聚餐"
     result = run_trip_planner(test_input)
-    print(result)
