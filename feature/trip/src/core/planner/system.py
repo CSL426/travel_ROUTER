@@ -54,6 +54,7 @@ class TripPlanningSystem:
                 - label: str - 地點類型
                 - period: str - 適合的時段
                 - hours: Dict - 營業時間
+                - url: str - 地點網址
 
             requirement: Dict - 使用者的規劃需求，包含:
                 - start_time: str - 開始時間(HH:MM)
@@ -204,11 +205,12 @@ class TripPlanningSystem:
         for plan in itinerary:
             # 顯示地點資訊
             print(f"\n[地點 {plan['step']}]")
-            print(f"名稱: {plan['name']}")
+            print(f"名稱: {plan['name']}, Label: {plan['label']}, 營業時間: {plan['hours']}")
             print(f"時間: {plan['start_time']} - {plan['end_time']}")
             print(f"停留: {plan['duration']}分鐘", end=' ')
             print(
-                f"交通: {plan['transport']['mode']}({plan['transport']['time']}分鐘)")
+                f"交通: {plan['transport']['mode']}({plan['transport']['time']}分鐘)"
+            )
 
             # 如果需要，顯示詳細導航
             if show_navigation and 'route_info' in plan:

@@ -78,6 +78,12 @@ class PlaceDetail(BaseModel):
         - 支援跨日營業時間(例如夜市)
         """
     )
+    
+    url: Optional[str] = Field(
+        default=None,
+        description="地點的導航連結",
+        examples=["https://example.com/route?..."]
+    )
 
     def __init__(self, **data):
         # 檢查是否有 duration 或 duration_min
@@ -170,7 +176,7 @@ class PlaceDetail(BaseModel):
             >>> point = {'lat': 25.0, 'lon': 121.5}
             >>> distance = place1.calculate_distance(point)
         """
-        from src.core.services.geo_service import GeoService
+        from ..services.geo_service import GeoService
 
         # 將自己的座標轉換為字典格式
         self_dict = {
@@ -237,7 +243,7 @@ class PlaceDetail(BaseModel):
         回傳:
             bool: True 表示適合，False 表示不適合
         """
-        from src.core.services.time_service import TimeService
+        from ..services.time_service import TimeService
 
         time_service = TimeService(
             lunch_time="12:00",   # 預設中餐時間
