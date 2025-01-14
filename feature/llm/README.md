@@ -1,7 +1,7 @@
 ## 環境配置
 - 需要套件 : pip install openai python-dotenv
 - 配置 .env 檔 : ChatGPT_api_key=your_openai_api_key  #放入自己的chatGPT api key
-
+- 使用說明: 需先初始化套件 ex: LLM_obj = LLM_Manager(ChatGPT_api_key)
 ##  LLM_Manager
 
 - `def Thinking_fun()` : 旅遊推薦包含了3種執行方式 

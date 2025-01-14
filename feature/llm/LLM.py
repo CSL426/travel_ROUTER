@@ -28,13 +28,15 @@ class LLM_Manager:
             return json.loads(content)
         elif format == "List[Dict]":
             return [json.loads(content)]  # 返回字典列表格式
+        elif format == "List[5 x Dict]":
+            return json.loads(content)
         
 
     def Thinking_fun(self, user_input):
         # 使用 ThreadPoolExecutor 來並行處理 API 請求
         with concurrent.futures.ThreadPoolExecutor() as executor:
             futures = {
-                'Thinking_A': executor.submit(self.__Query, system_prompt.Thinking_A, user_input, "List[Dict]"),
+                'Thinking_A': executor.submit(self.__Query, system_prompt.Thinking_A, user_input, "List[5 x Dict]"),
                 'Thinking_B': executor.submit(self.__Query, system_prompt.Thinking_B, user_input, "List[Dict]"),
                 'Thinking_C': executor.submit(self.__Query, system_prompt.Thinking_C, user_input, "List[Dict]")        
             }
@@ -73,13 +75,13 @@ class LLM_Manager:
 class system_prompt:
     Thinking_A = '''
                 你是個善於分辨形容的旅行助手。請針對用戶需求生成行程建議。請按照以下格式回應：
-                {
-                    "上午": "",
-                    "中餐": "",
-                    "下午": "",
-                    "晚餐": "",
-                    "晚上": ""
-                }
+                [
+                    {"上午": ""}, 
+                    {"中餐": ""}, 
+                    {"下午": ""}, 
+                    {"晚餐": ""}, 
+                    {"晚上": ""} 
+                ]
                 '''
     Thinking_B = """
                 請根據用戶需求來判斷是否包含該條件，並按照下列格式回傳相應結果：
@@ -173,5 +175,6 @@ if __name__ == "__main__":
     # 呼叫 Thinking 和 Cloud 的並行處理函數
     user_input = "文青咖啡廳"
     results = LLM_obj.Thinking_fun(user_input)
-    results = LLM_obj.Cloud_fun(user_input)
+    # results = LLM_obj.Cloud_fun(user_input)
     print(results)
+
