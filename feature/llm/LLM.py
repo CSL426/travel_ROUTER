@@ -13,6 +13,10 @@ class LLM_Manager:
         使用 OpenAI API 生成回應
         format = "list" or "List[Dict]"
         '''
+        # 檢查類型檢查和轉換,使用 json.dumps 轉換為字符串
+        if isinstance(user_input, (list, dict)):
+            user_input = json.dumps(user_input, ensure_ascii=False)
+
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
@@ -67,9 +71,10 @@ class LLM_Manager:
             return Cloud
 
     def store_fun(self, user_input):
-        result = self.fetch_response(system_prompt.store_recommend, user_input, "List[Dict]")
+        result = self.__Query(system_prompt.store_recommend, user_input, "List[Dict]")
         Store = result
         return Store
+
 
 
 class system_prompt:
@@ -177,4 +182,5 @@ if __name__ == "__main__":
     results = LLM_obj.Thinking_fun(user_input)
     # results = LLM_obj.Cloud_fun(user_input)
     print(results)
+
 
