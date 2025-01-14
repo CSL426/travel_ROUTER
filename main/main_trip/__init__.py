@@ -1,3 +1,3 @@
-# from .controller import TripController
+from .controller import TripController
 
-# __all__ = ['TripController']
+__all__ = ['TripController']

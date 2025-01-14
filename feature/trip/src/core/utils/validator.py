@@ -254,7 +254,7 @@ class TripValidator:
                 - transport_mode: 交通方式
                 - distance_threshold: 可接受的最大距離(公里)
                 - breakfast_time: 早餐時間 (HH:MM 或 none)
-                - lunch_time: 午餐時間 (HH:MM 或 none)
+                - lunch_time: 中餐時間 (HH:MM 或 none)
                 - dinner_time: 晚餐時間 (HH:MM 或 none)
                 - budget: 預算金額 或 'none'
                 - date: 出發日期 (MM-DD 或 none)
@@ -372,7 +372,7 @@ class TripValidator:
 
         # 預設值定義
         defaults = {
-            "start_time": "09:00",        # 預設早上9點開始
+            "start_time": "09:00",        # 預設上午9點開始
             "end_time": "21:00",          # 預設晚上9點結束
             "start_point": "台北車站",     # 預設起點
             "end_point": "none",          # 預設終點(同起點)
@@ -380,7 +380,7 @@ class TripValidator:
             "transport_mode_display": "開車",  # 顯示用
             "distance_threshold": 30,      # 預設最大30公里
             "breakfast_time": "none",      # 預設不安排早餐
-            "lunch_time": "12:00",        # 預設中午12點午餐
+            "lunch_time": "12:00",        # 預設中午12點中餐
             "dinner_time": "18:00",       # 預設晚上6點晚餐
             "budget": "none",             # 預設無預算限制
             "date": default_date          # 預設為明天日期

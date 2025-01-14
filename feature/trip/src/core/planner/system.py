@@ -69,7 +69,10 @@ class TripPlanningSystem:
         start_time = datetime.now()
 
         try:
-            # 先設定預設值
+            # 把 requirement 的 key 中文改成英文
+            requirement = self._convert_keys(requirement)
+            
+            # 設定預設值
             default_requirement = {
                 "start_time": "09:00",        # 預設早上9點開始
                 "end_time": "21:00",          # 預設晚上9點結束
@@ -305,3 +308,67 @@ class TripPlanningSystem:
             }
         except Exception as e:
             raise ValueError(f"無法取得地點資訊: {str(e)}")
+
+    def _convert_keys(self, requirement: Dict) -> Dict:
+        """
+        轉換需求字典的中文 key 為英文
+
+        輸入參數:
+            requirement: Dict - 使用中文 key 的需求字典
+                {
+                    "出發時間": "00:00" | "none",
+                    "結束時間": "00:00" | "none",
+                    ...
+                }
+
+        回傳:
+            Dict: 使用英文 key 的需求字典
+                {
+                    "start_time": "00:00" | "none",
+                    "end_time": "00:00" | "none",
+                    ...
+                }
+        """
+        # 中英文 key 對照表
+        KEY_MAPPING = {
+            "出發時間": "start_time",
+            "結束時間": "end_time",
+            "出發地點": "start_point",
+            "結束地點": "end_point",
+            "交通方式": "transport_mode",
+            "可接受距離門檻(KM)": "distance_threshold",
+            "早餐時間": "breakfast_time",
+            "午餐時間": "lunch_time",
+            "晚餐時間": "dinner_time",
+            "預算": "budget",
+            "出發日": "date"
+        }
+
+        # 交通方式對照表
+        TRANSPORT_MODE_MAPPING = {
+            "大眾運輸": "transit",
+            "開車": "driving",
+            "騎自行車": "bicycling",
+            "步行": "walking"
+        }
+        
+        requirement_dict = requirement[0]
+        
+        converted = {}
+        for zh_key, value in requirement_dict.items():
+            if zh_key not in KEY_MAPPING:
+                continue
+
+            eng_key = KEY_MAPPING[zh_key]
+            
+            # 處理 'none' 轉 None
+            if value == 'none':
+                value = None
+
+            # 轉換交通方式
+            if zh_key == "交通方式" and value in TRANSPORT_MODE_MAPPING:
+                value = TRANSPORT_MODE_MAPPING[value]
+
+            converted[eng_key] = value
+
+        return converted

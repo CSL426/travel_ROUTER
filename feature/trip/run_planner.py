@@ -22,7 +22,7 @@ def main():
         print(f"起點：{DEFAULT_REQUIREMENT['start_point']}")
         print(f"時間：{DEFAULT_REQUIREMENT['start_time']} - "
               f"{DEFAULT_REQUIREMENT['end_time']}")
-        print(f"午餐：{DEFAULT_REQUIREMENT['lunch_time']}")
+        print(f"中餐：{DEFAULT_REQUIREMENT['lunch_time']}")
         print(f"晚餐：{DEFAULT_REQUIREMENT['dinner_time']}")
         print(f"景點數量：{len(DEFAULT_LOCATIONS)}個")
         print(f"交通方式：{DEFAULT_REQUIREMENT['transport_mode']}")

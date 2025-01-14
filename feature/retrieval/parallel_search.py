@@ -19,7 +19,12 @@ class ParallelSearchManager:
                 - qdrant_url
                 - qdrant_api_key
         '''
-        self.qdrant_obj = qdrant_search(config)
+        self.qdrant_obj = qdrant_search(
+            collection_name='view_restaurant_test',
+            config=config,
+            score_threshold=0,
+            limit=50,
+        )
 
     def parallel_trip_search(self, input_queries: List[Dict]) -> Dict:
         '''

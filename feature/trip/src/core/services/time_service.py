@@ -25,7 +25,7 @@ class TimeService:
         """初始化時間服務
 
         輸入參數:
-            lunch_time: str - 午餐時間,格式 "HH:MM" 
+            lunch_time: str - 中餐時間,格式 "HH:MM" 
             dinner_time: str - 晚餐時間,格式 "HH:MM"
         """
         # 原有的時間設定
@@ -36,15 +36,15 @@ class TimeService:
 
         # 新增狀態追蹤
         self.current_period = 'morning'  # 目前時段
-        self.lunch_completed = False     # 午餐完成狀態
+        self.lunch_completed = False     # 中餐完成狀態
         self.dinner_completed = False    # 晚餐完成狀態
 
     def get_current_period(self, current_time: datetime) -> str:
         """判斷當前時段
 
         時段轉換邏輯:
-        1. morning -> lunch: 到達午餐時間
-        2. lunch -> afternoon: 完成午餐
+        1. morning -> lunch: 到達中餐時間
+        2. lunch -> afternoon: 完成中餐
         3. afternoon -> dinner: 到達晚餐時間  
         4. dinner -> night: 完成晚餐
 
@@ -93,7 +93,7 @@ class TimeService:
         """
         if place_period == 'lunch' and self.current_period == 'lunch':
             self.lunch_completed = True
-            # print("午餐完成")
+            # print("中餐完成")
 
         elif place_period == 'dinner' and self.current_period == 'dinner':
             self.dinner_completed = True
@@ -219,9 +219,9 @@ class TimeService:
         """判斷指定時間屬於哪個時段
 
         將一天劃分為五個時段：
-        - morning: 早上（開始到午餐前）
-        - lunch: 午餐時段
-        - afternoon: 下午（午餐後到晚餐前）
+        - morning: 上午（開始到中餐前）
+        - lunch: 中餐時段
+        - afternoon: 下午（中餐後到晚餐前）
         - dinner: 晚餐時段
         - night: 晚上（晚餐後）
 
@@ -428,7 +428,7 @@ class TimeService:
     def _calculate_overnight_duration(self, start: time, end: time) -> int:
         """計算跨日時段的持續時間
 
-        處理營業時間跨越午夜的特殊情況，例如從晚上10點營業到隔天早上5點。
+        處理營業時間跨越午夜的特殊情況，例如從晚上10點營業到隔天上午5點。
 
         參數:
             start: 開始時間

@@ -1,3 +1,4 @@
+import ast
 import pandas as pd
 from .sample_data import load_and_sample_data
 
@@ -6,7 +7,7 @@ def pandas_search(condition_data: dict, detail_info: list[dict]) -> list[dict]:
     '''
     輸入:
         condition_data: dict
-            key: 時段名稱(早上/午餐/下午/晚餐/晚上)
+            key: 時段名稱(上午/中餐/下午/晚餐/晚上)
             value: 該時段的place_id列表
         detail_info: list[dict]
             使用者的特殊需求，例如 [{'適合兒童': True, '無障礙': False, '內用座位': True}]
@@ -26,8 +27,8 @@ def pandas_search(condition_data: dict, detail_info: list[dict]) -> list[dict]:
     '''
     # 中文到英文的時段對應
     period_mapping = {
-        '早上': 'morning',
-        '午餐': 'lunch',
+        '上午': 'morning',
+        '中餐': 'lunch',
         '下午': 'afternoon',
         '晚餐': 'dinner',
         '晚上': 'night'
@@ -40,20 +41,11 @@ def pandas_search(condition_data: dict, detail_info: list[dict]) -> list[dict]:
         for pid in place_ids:
             condition_records.append({
                 'place_id': pid,
-                'period': eng_period  # 存入英文時段名稱
+                'period': eng_period  # 使用轉換後的英文時段
             })
 
     # 讀取景點基本資料
-    info_df = pd.read_csv('./database/info_df.csv')
-
-    # 建立 place_id 和 period 的對應列表
-    condition_records = []
-    for period, place_ids in condition_data.items():
-        for pid in place_ids:
-            condition_records.append({
-                'place_id': pid,
-                'period': period
-            })
+    info_df = pd.read_csv('./database/info_df.csv').replace('none', None)
 
     # 合併基本資料與條件資料
     condition_info_df = pd.merge(
@@ -83,7 +75,7 @@ def pandas_search(condition_data: dict, detail_info: list[dict]) -> list[dict]:
             ]
 
     # 加入營業時間資料
-    hours_df = pd.read_csv('./database/hours_df.csv')
+    hours_df = pd.read_csv('./database/hours_df.csv').replace('none', None)
     filtered_df = pd.merge(
         filtered_df,
         hours_df[['place_id', 'hours']],
@@ -101,29 +93,48 @@ def pandas_search(condition_data: dict, detail_info: list[dict]) -> list[dict]:
     filtered_df['url'] = ("https://www.google.com/maps/place/?q=place_id:" +
                           filtered_df['place_id'])
 
-    # 依評分排序並取每個時段前50筆
+    # 依評分排序並取每個時段前25筆
     result = []
     for period in filtered_df['period'].unique():
         period_df = filtered_df[filtered_df['period'] == period]
-        top_50 = period_df.nlargest(50, 'rating')[
+        top_50 = period_df.nlargest(25, 'rating')[
             ['place_id', 'place_name', 'rating', 'lon', 'lat',
              'label_type', 'label', 'hours', 'period', 'url']
         ]
 
-        # 轉換成字典格式
+        # 轉換成字典格式（注意縮排在 for period 迴圈內）
         for _, row in top_50.iterrows():
-            result.append({
-                'place_id': row['place_id'],
-                'name': row['place_name'],
-                'rating': float(row['rating']),
-                'lon': float(row['lon']),
-                'lat': float(row['lat']),
-                'label_type': row['label_type'],
-                'label': row['label'],
-                'hours': row['hours'],
-                'period': row['period'],
-                'url': row['url']
-            })
+            try:
+                # 處理 hours 字串轉字典
+                hours_dict = ast.literal_eval(
+                    row['hours']) if isinstance(row['hours'], str) else {}
+
+                # 檢查並修正每一天的營業時間格式
+                for day in range(1, 8):
+                    if (day not in hours_dict or
+                        hours_dict[day] is None or
+                        hours_dict[day] == 'none' or
+                            hours_dict[day] == [None]):
+                        hours_dict[day] = [{'start': '00:00', 'end': '23:59'}]
+
+                result.append({
+                    'place_id': row['place_id'],
+                    'name': row['place_name'],
+                    'rating': float(row['rating']),
+                    'lon': float(row['lon']),
+                    'lat': float(row['lat']),
+                    'label_type': row['label_type'],
+                    'label': row['label'],
+                    'hours': hours_dict,
+                    'period': row['period'],
+                    'url': row['url']
+                })
+            except (ValueError, SyntaxError) as e:
+                print(f"轉換營業時間格式失敗 ({row['place_id']}): {e}")
+                continue
+            except Exception as e:
+                print(f"其他錯誤 ({row['place_id']}): {e}")
+                continue
 
     return result
 

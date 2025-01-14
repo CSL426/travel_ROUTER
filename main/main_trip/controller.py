@@ -1,10 +1,13 @@
+import os
+from dotenv import load_dotenv
 from typing import Dict, List, Tuple
+from concurrent.futures import ThreadPoolExecutor
+
 from feature.llm.LLM import LLM_Manager
 from feature.retrieval.parallel_search import ParallelSearchManager
 from feature.retrieval.qdrant_search import qdrant_search
 from feature.sql import csv_read
 from feature.trip import TripPlanningSystem
-from concurrent.futures import ThreadPoolExecutor
 
 
 class TripController:
@@ -23,8 +26,6 @@ class TripController:
                 - ChatGPT_api_key: ChatGPT API 金鑰
         """
         self.config = config
-        self.llm_manager = LLM_Manager(config)
-        self.search_manager = ParallelSearchManager(config)
         self.trip_planner = TripPlanningSystem()
 
     def process_message(self, input_text: str) -> str:
@@ -57,7 +58,6 @@ class TripController:
 
     def _analyze_intent(self, text: str) -> Tuple[List[Dict], List[Dict], List[Dict]]:
         """
-        From Abby:
         分析使用者意圖
 
         輸入:
@@ -69,8 +69,8 @@ class TripController:
                 - List[Dict]: 特殊需求 (對應圖中的 'b')
                 - List[Dict[str, Union[int, str, None]]]: 客戶基本要求 (對應圖中的 'c')
         """
-        # 假設會回傳三個結果
-        LLM_obj = LLM_Manager(config=self.config)
+        LLM_obj = LLM_Manager(self.config['ChatGPT_api_key'])
+
         return LLM_obj.Thinking_fun(text)
 
     def _vector_retrieval(self, period_describe: List[Dict]) -> Dict:
@@ -81,23 +81,32 @@ class TripController:
             period_describe: List[Dict] 
                 各時段的描述，例如：
                 [
-                    {'早上': '文青咖啡廳描述'},
-                    {'午餐': '餐廳描述'}
+                    {'上午': '文青咖啡廳描述'},
+                    {'中餐': '餐廳描述'}
                 ]
 
         輸出:
             Dict: 各時段對應的景點ID
                 {
-                    '早上': ['id1', 'id2', ...],
-                    '午餐': ['id3', 'id4', ...]
+                    '上午': ['id1', 'id2', ...],
+                    '中餐': ['id3', 'id4', ...]
                 }
         """
         try:
             # 建立 qdrant_search 實例
             qdrant_obj = qdrant_search(
                 collection_name='view_restaurant_test',
-                config=self.config
+                config=self.config,
+                score_threshold=0.5,
+                limit=30
             )
+            # period_describe = [
+            #     {'上午': '喜歡在文青咖啡廳裡享受幽靜且美麗的裝潢'},
+            #     {'中餐': '好吃很辣便宜加飯附湯環境整潔很多人可以停車'},
+            #     {'下午': '充滿歷史感的日式建築'},
+            #     {'晚餐': '適合多人聚餐的餐廳'},
+            #     {'晚上': '可以看夜景的地方'}
+            # ]
 
             # 使用 ThreadPoolExecutor 進行平行處理
             results = {}
@@ -129,7 +138,7 @@ class TripController:
                 各時段的景點ID，格式如：
                 {
                     '上午': ['id1', 'id2'],
-                    '午餐': ['id3', 'id4']
+                    '中餐': ['id3', 'id4']
                 }
             unique_requirement: List[Dict]
                 使用者的特殊需求，例如：
@@ -160,3 +169,50 @@ class TripController:
         """
         # 使用已初始化的 trip_planner
         return self.trip_planner.plan_trip(location_details, base_requirement)
+
+
+def init_config():
+    """初始化設定
+
+    載入環境變數並整理成設定字典
+
+    回傳:
+        dict: 包含所有 API 設定的字典，包括:
+            - jina_url: Jina API 端點
+            - jina_headers_Authorization: Jina 認證金鑰
+            - qdrant_url: Qdrant 伺服器位址
+            - qdrant_api_key: Qdrant 存取金鑰
+            - ChatGPT_api_key: OpenAI API 金鑰
+    """
+    # 直接載入環境變數，這樣在容器中也能正常運作
+    load_dotenv()
+
+    config = {
+        'jina_url': os.getenv('jina_url'),
+        'jina_headers_Authorization': os.getenv('jina_headers_Authorization'),
+        'qdrant_url': os.getenv('qdrant_url'),
+        'qdrant_api_key': os.getenv('qdrant_api_key'),
+        'ChatGPT_api_key': os.getenv('ChatGPT_api_key')
+    }
+
+    # 驗證所有設定都存在
+    missing = [key for key, value in config.items() if not value]
+    if missing:
+        raise ValueError(f"缺少必要的API設定: {', '.join(missing)}")
+
+    return config
+
+
+if __name__ == "__main__":
+    try:
+        config = init_config()
+        controller_instance = TripController(config)
+
+        test_input = "想去台北文青的地方，吃午餐要便宜又好吃，下午想去逛有特色的景點，晚餐要可以跟朋友聚餐"
+        result = controller_instance.process_message(test_input)
+        controller_instance.trip_planner.print_itinerary(
+            result,
+        )
+
+    except Exception as e:
+        print("DEBUG: ", str(e))  # 完整錯誤訊息

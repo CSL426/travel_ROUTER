@@ -8,7 +8,7 @@ def load_and_sample_data(file_path):
 
     輸出:
         dict: 
-            key: 時段名稱(早上/午餐/下午/晚餐/晚上)
+            key: 時段名稱(上午/中餐/下午/晚餐/晚上)
             value: 該時段的place_id列表
     '''
     # 讀取 info.csv
@@ -31,8 +31,8 @@ def load_and_sample_data(file_path):
 
     # 將每個時段轉換為中文並加入對應的place_id列表
     period_groups = {
-        '早上': morning_df['place_id'].tolist(),
-        '午餐': lunch_df['place_id'].tolist(),
+        '上午': morning_df['place_id'].tolist(),
+        '中餐': lunch_df['place_id'].tolist(),
         '下午': afternoon_df['place_id'].tolist(),
         '晚餐': dinner_df['place_id'].tolist(),
         '晚上': night_df['place_id'].tolist()

@@ -26,5 +26,5 @@ class PlanRequirement(TypedDict, total=False):
     start_time: Optional[str]     # 開始時間
     end_time: Optional[str]       # 結束時間
     transport_mode: Optional[str]  # 交通方式
-    lunch_time: Optional[str]     # 午餐時間
+    lunch_time: Optional[str]     # 中餐時間
     dinner_time: Optional[str]    # 晚餐時間
