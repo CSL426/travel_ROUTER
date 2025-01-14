@@ -24,6 +24,7 @@ setup(
         "python-dotenv",
         "openai==0.28",
         "qdrant-client",
+        "pytest",
     ],
     python_requires=">=3.12",
 )

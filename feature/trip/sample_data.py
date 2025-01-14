@@ -6,7 +6,7 @@ from typing import List, Dict
 import pandas as pd
 
 # 預設行程需求
-DEFAULT_REQUIREMENT = {
+DEFAULT_REQUIREMENT = [{
     "start_time": None,
     "end_time": "21:00",
     "start_point": "中壢火車站",
@@ -18,7 +18,7 @@ DEFAULT_REQUIREMENT = {
     "dinner_time": "18:00",
     "budget": None,
     "date": None
-}
+}]
 
 
 def process_csv(filepath: str) -> pd.DataFrame:
