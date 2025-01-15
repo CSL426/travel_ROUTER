@@ -258,6 +258,11 @@ class BasePlanningStrategy:
                 visit_time,
                 final_travel_info['duration_minutes']
             )
+            
+            # 根據實際抵達時間更新終點的period
+            self.end_location.period = self.time_service.get_time_period(
+                final_arrival_time
+            )
 
             # 加入終點到行程
             end_item = self._create_itinerary_item(
@@ -271,7 +276,7 @@ class BasePlanningStrategy:
 
         print(f"\n=== 行程規劃完成 ===")
         print(f"規劃地點數: {len(self._itinerary)}")
-        print(f"總行程距離: {self.total_distance:.1f} 公里")
+        print(f"總行程距離: {self.total_distance:.0f} 公里")
 
         return self._itinerary
 
@@ -357,8 +362,11 @@ class BasePlanningStrategy:
         travel_end = arrival_time
         travel_start = travel_end - \
             timedelta(minutes=travel_info.get('duration_minutes', 0))
-        travel_period = f"{travel_start.strftime('%H:%M')}-{travel_end.strftime('%H:%M')}"
-        
+        travel_period = (
+            f"{travel_start.strftime('%H:%M')}-"
+            f"{travel_end.strftime('%H:%M')}"
+        )
+
         # 把起點終點的label替換
         if len(self.visited_places) == 0:
             display_label = '起點'
@@ -366,7 +374,7 @@ class BasePlanningStrategy:
             display_label = '終點'
         else:
             display_label = place.label
-        
+
         # 交通方式中英對照
         transport_display = {
             'transit': '大眾運輸',
@@ -375,8 +383,11 @@ class BasePlanningStrategy:
             'bicycling': '騎車'
         }
         transport_mode = travel_info.get('transport_mode', self.travel_mode)
-        transport_chinese = transport_display.get(transport_mode, transport_mode)
-    
+        transport_chinese = transport_display.get(
+            transport_mode,
+            # transport_mode,
+        )
+
         return {
             'step': len(self.visited_places),
             'name': place.name,
@@ -395,6 +406,7 @@ class BasePlanningStrategy:
             },
             'route_info': travel_info.get('route_info'),
             'route_url': place.url,
+            'period': place.period,
         }
 
     def is_feasible(self,

@@ -38,7 +38,11 @@ class TripPlanningSystem:
 
         # 初始化策略系統
         self.strategy = None
-
+        
+        # 初始化時間相關屬性
+        self.start_time = None
+        self.end_time = None
+        
         # 執行狀態追蹤
         self.execution_time = 0.0
 
@@ -72,7 +76,7 @@ class TripPlanningSystem:
         try:
             # 把 requirement 的 key 中文改成英文
             requirement = self._convert_keys(requirement)
-            
+
             # 設定預設值
             default_requirement = {
                 "start_time": "09:00",        # 預設早上9點開始
@@ -91,6 +95,10 @@ class TripPlanningSystem:
 
             # 使用更新後的設定值
             requirement = default_requirement
+            
+            # 設定時間屬性
+            self.start_time = datetime.strptime(requirement['start_time'], '%H:%M')
+            self.end_time = datetime.strptime(requirement['end_time'], '%H:%M')
 
             # 設定起點和終點
             self.start_location = self._get_start_location(
@@ -204,13 +212,15 @@ class TripPlanningSystem:
 
         for plan in itinerary:
             # 顯示地點資訊
-            print(f"\n[地點 {plan['step']}]")
-            print(f"名稱: {plan['name']}, Label: {plan['label']}, 營業時間: {plan['hours']}")
+            print(f"\n[地點 {plan['step']}] "
+                  f"Period: {plan['period']}")
+            print(f"名稱: {plan['name']},"
+                  f" Label: {plan['label']},"
+                  f" 營業時間: {plan['hours']}")
             print(f"時間: {plan['start_time']} - {plan['end_time']}")
             print(f"停留: {plan['duration']}分鐘", end=' ')
-            print(
-                f"交通: {plan['transport']['mode']}({plan['transport']['time']}分鐘)"
-            )
+            print(f"交通: {plan['transport']['mode']}"
+                  f"({plan['transport']['time']}分鐘)")
 
             # 如果需要，顯示詳細導航
             if show_navigation and 'route_info' in plan:
@@ -248,9 +258,10 @@ class TripPlanningSystem:
             'lon': 121.5170,
             'duration_min': 0,
             'label': '交通樞紐',
-            'period': 'morning',
-            'hours': {i: [{'start': '00:00', 'end': '23:59'}]
-                      for i in range(1, 8)}
+            'period': self.time_service.get_time_period(self.start_time),
+            'hours': {
+                i: [{'start': '00:00', 'end': '23:59'}] for i in range(1, 8)
+            }
         }
 
         if not start_point or start_point == "台北車站":
@@ -260,6 +271,9 @@ class TripPlanningSystem:
         try:
             # 如果有指定其他起點，取得該地點資訊
             location = self._get_location_info(start_point)
+            # 根據start_time設定period
+            location['period'] = self.time_service.get_time_period(
+                self.start_time)
             return PlaceDetail(**location)
         except Exception as e:
             print(f"無法取得起點資訊，使用預設起點: {str(e)}")
@@ -276,14 +290,25 @@ class TripPlanningSystem:
 
         回傳:
             PlaceDetail - 終點的完整資訊物件
+        注意:
+            - 如果end_point為none,使用起點資料但更新period
+            - period為暫時性的,會在execute()時根據實際抵達時間更新
         """
         if not end_point or end_point == "none":
-            # 如果沒有指定終點，使用起點作為終點
-            return self.start_location
+            # 使用起點資料但給予新的period
+            end_location = self.start_location.model_copy()
+            # 根據end_time設定暫時period (之後會更新)
+            end_location.period = self.time_service.get_time_period(
+                self.end_time
+            )
+            return end_location
 
         try:
             # 如果有指定終點，取得該地點資訊
             location = self._get_location_info(end_point)
+            # 設定暫時period
+            location['period'] = self.time_service.get_time_period(
+                self.end_time)
             return PlaceDetail(**location)
         except Exception as e:
             print(f"無法取得終點資訊，使用起點作為終點: {str(e)}")
@@ -353,16 +378,16 @@ class TripPlanningSystem:
             "騎自行車": "bicycling",
             "步行": "walking"
         }
-        
+
         requirement_dict = requirement[0]
-        
+
         converted = {}
         for zh_key, value in requirement_dict.items():
             if zh_key not in KEY_MAPPING:
                 continue
 
             eng_key = KEY_MAPPING[zh_key]
-            
+
             # 處理 'none' 轉 None
             if value == 'none':
                 value = None
