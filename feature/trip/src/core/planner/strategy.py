@@ -394,7 +394,7 @@ class BasePlanningStrategy:
                 'period': travel_period,
             },
             'route_info': travel_info.get('route_info'),
-            'route_url': 'example@url',
+            'route_url': place.url,
         }
 
     def is_feasible(self,

@@ -56,7 +56,7 @@ class TripRequirement(BaseModel):
     transport_mode: str = Field(description="偏好的交通方式")
     distance_threshold: int = Field(description="可接受的最大距離(公里)")
     breakfast_time: str = Field(description="早餐時間(HH:MM或none)")
-    lunch_time: str = Field(description="午餐時間(HH:MM或none)")
+    lunch_time: str = Field(description="中餐時間(HH:MM或none)")
     dinner_time: str = Field(description="晚餐時間(HH:MM或none)")
     budget: Union[int, Literal["none"]] = Field(description="預算金額或無預算限制")
     date: str = Field(description="出發日期(MM-DD格式)")

@@ -425,7 +425,7 @@ class GeoService:
                 'lon': location['lng'],
                 'duration_min': 0,
                 'label': '交通樞紐',
-                'period': 'morning',  # 起點預設為早上時段
+                'period': 'morning',  # 起點預設為上午時段
                 'hours': {i: [{'start': '00:00', 'end': '23:59'}] for i in range(1, 8)}
             }
         except Exception as e:

@@ -1,97 +1,152 @@
-# 從向量搜尋跟llm那邊獲得資訊並讀取csv調度出資料(最符合的前100)
+import ast
 import pandas as pd
 from .sample_data import load_and_sample_data
 
 
-def pandas_search(condition_data: list[dict], detail_info: list[dict]) -> list[dict]:
+def pandas_search(condition_data: dict, detail_info: list[dict]) -> list[dict]:
     '''
-    結合向量資料搜尋出來的place_id與使用者提出的特殊需求，產出符合的結構資料
+    輸入:
+        condition_data: dict
+            key: 時段名稱(上午/中餐/下午/晚餐/晚上)
+            value: 該時段的place_id列表
+        detail_info: list[dict]
+            使用者的特殊需求，例如 [{'適合兒童': True, '無障礙': False, '內用座位': True}]
+
+    輸出:
+        list[dict]: 符合條件的景點資料列表，每個景點包含:
+            - place_id: 景點ID
+            - name: 景點名稱
+            - rating: 評分
+            - lon: 經度
+            - lat: 緯度
+            - label_type: 標籤類型
+            - label: 標籤
+            - hours: 營業時間
+            - period: 時段(morning/lunch/afternoon/dinner/night)
+            - url: Google Maps連結
     '''
-    # 步驟1: 讀取 info_df 並與 condition_data 交集形成 condition_info_df
-    info_df = pd.read_csv('./database/info_df.csv')
-    condition_info_df = pd.merge(pd.DataFrame(
-        condition_data), info_df, on='place_id', how='inner')
-    # print("condition_info_df如下")
-    # print(condition_info_df)
+    # 中文到英文的時段對應
+    period_mapping = {
+        '上午': 'morning',
+        '中餐': 'lunch',
+        '下午': 'afternoon',
+        '晚餐': 'dinner',
+        '晚上': 'night'
+    }
 
-    # 步驟2: 轉換 detail_info 的 key:value
-    detail_keys = ['內用座位', '洗手間', '適合兒童', '適合團體',
-                   '現金', '其他支付', '收費停車', '免費停車', 'wi-fi', '無障礙']
-    detail_conditions = {key: detail_info[0].get(
-        key, None) for key in detail_keys}
-    # print("detail_conditions如下")
-    # print(detail_conditions)
-
-    # 合併 detail_conditions 中值為 True 的鍵為一個列表
-    true_keys = [key for key, value in detail_conditions.items()
-                 if value is True]
-    # print("true_keys如下")
-    # print(true_keys)  # 打印值為 True 的鍵列表
-
-    # 步驟3: 從 condition_info_df 中篩選符合 true_keys 的資料
-    filtered_df = condition_info_df
-    for key in true_keys:
-        filtered_df = filtered_df[filtered_df['device_cat'].str.contains(
-            key, na=False, case=False)]  # 忽略大小寫
-
-    # 確保 device_cat 同時包含所有 true_keys 的元素
-    filtered_df = filtered_df[filtered_df['device_cat'].apply(
-        lambda x: all(k in x for k in true_keys))]
-    # print("filtered_df如下")
-    # print(filtered_df)  # 打印當前篩選後的資料
-
-    # 讀取 hours_df.csv 並根據 place_id 加入 hours 欄位於 filtered_df
-    hours_df = pd.read_csv('./database/hours_df.csv')  # 讀取 hours_df.csv
-    filtered_df = pd.merge(filtered_df, hours_df[[
-                           'place_id', 'hours']], on='place_id', how='left')  # 根據 place_id 合併
-
-    # 移除 hours 欄位為空值或為 '{}' 的資料
-    filtered_df = filtered_df[filtered_df['hours'].notna() & (
-        filtered_df['hours'] != '{}')]  # 移除 hours 為空值或為 '{}' 的資料
-
-    # 新增url欄位
-    filtered_df['url'] = "https://www.google.com/maps/place/?q=place_id:" + \
-        filtered_df['place_id']  # 新增 url 欄位
-
-    # 步驟4: 依 rating 高到低，按 period 欄位各返回 50 筆資料
-    result = []
-
-    for period_value in filtered_df['period'].unique():
-        period_df = filtered_df[filtered_df['period']
-                                == period_value]  # 根據 period 進行篩選
-        top_tier = period_df.nlargest(50, 'rating')[
-            ['place_id', 'place_name', 'rating', 'lon', 'lat', 'label_type', 'label', 'hours', 'period', 'url']]
-
-        for _, row in top_tier.iterrows():
-            result.append({
-                'place_id': row['place_id'],
-                'name': row['place_name'],
-                'rating': row['rating'],
-                'lon': row['lon'],
-                'lat': row['lat'],
-                'label_type': row['label_type'],
-                'label': row['label'],
-                'hours': row['hours'],
-                'period': row['period'],
-                'url': row['url']
+    # 處理輸入的中文時段資料，轉換成英文
+    condition_records = []
+    for zh_period, place_ids in condition_data.items():
+        eng_period = period_mapping[zh_period]
+        for pid in place_ids:
+            condition_records.append({
+                'place_id': pid,
+                'period': eng_period  # 使用轉換後的英文時段
             })
 
-    # # 將結果寫入 output.txt
-    # with open('output.txt', 'w', encoding='utf-8') as f:
-    #     for record in result:
-    #         f.write(f"{record}\n")  # 將每個記錄寫入檔案
+    # 讀取景點基本資料
+    info_df = pd.read_csv('./database/info_df.csv').replace('none', None)
 
-    return result  # 返回格式化後的結果
+    # 合併基本資料與條件資料
+    condition_info_df = pd.merge(
+        pd.DataFrame(condition_records),
+        info_df,
+        on='place_id',
+        how='inner'
+    )
+
+    # 處理特殊需求條件
+    detail_keys = ['內用座位', '洗手間', '適合兒童', '適合團體',
+                   '現金', '其他支付', '收費停車', '免費停車', 'wi-fi', '無障礙']
+    detail_conditions = {key: detail_info[0].get(key, None)
+                         for key in detail_keys}
+
+    # 取得值為True的條件
+    true_keys = [key for key, value in detail_conditions.items()
+                 if value is True]
+
+    # 根據特殊需求篩選資料
+    filtered_df = condition_info_df
+    if true_keys:  # 只在有特殊需求時進行篩選
+        for key in true_keys:
+            filtered_df = filtered_df[
+                filtered_df['device_cat'].str.contains(
+                    key, na=False, case=False)
+            ]
+
+    # 加入營業時間資料
+    hours_df = pd.read_csv('./database/hours_df.csv').replace('none', None)
+    filtered_df = pd.merge(
+        filtered_df,
+        hours_df[['place_id', 'hours']],
+        on='place_id',
+        how='left'
+    )
+
+    # 移除無營業時間資料的記錄
+    filtered_df = filtered_df[
+        filtered_df['hours'].notna() &
+        (filtered_df['hours'] != '{}')
+    ]
+
+    # 新增 Google Maps 連結
+    filtered_df['url'] = ("https://www.google.com/maps/place/?q=place_id:" +
+                          filtered_df['place_id'])
+
+    # 依評分排序並取每個時段前25筆
+    result = []
+    for period in filtered_df['period'].unique():
+        period_df = filtered_df[filtered_df['period'] == period]
+        top_50 = period_df.nlargest(25, 'rating')[
+            ['place_id', 'place_name', 'rating', 'lon', 'lat',
+             'label_type', 'label', 'hours', 'period', 'url']
+        ]
+
+        # 轉換成字典格式（注意縮排在 for period 迴圈內）
+        for _, row in top_50.iterrows():
+            try:
+                # 處理 hours 字串轉字典
+                hours_dict = ast.literal_eval(
+                    row['hours']) if isinstance(row['hours'], str) else {}
+
+                # 檢查並修正每一天的營業時間格式
+                for day in range(1, 8):
+                    if (day not in hours_dict or
+                        hours_dict[day] is None or
+                        hours_dict[day] == 'none' or
+                            hours_dict[day] == [None]):
+                        hours_dict[day] = [{'start': '00:00', 'end': '23:59'}]
+
+                result.append({
+                    'place_id': row['place_id'],
+                    'name': row['place_name'],
+                    'rating': float(row['rating']),
+                    'lon': float(row['lon']),
+                    'lat': float(row['lat']),
+                    'label_type': row['label_type'],
+                    'label': row['label'],
+                    'hours': hours_dict,
+                    'period': row['period'],
+                    'url': row['url']
+                })
+            except (ValueError, SyntaxError) as e:
+                print(f"轉換營業時間格式失敗 ({row['place_id']}): {e}")
+                continue
+            except Exception as e:
+                print(f"其他錯誤 ({row['place_id']}): {e}")
+                continue
+
+    return result
 
 
 if __name__ == "__main__":
-    # 使用 load_and_sample_data 函數獲取 condition_dict
-    condition_dict = load_and_sample_data('info_df.csv')
+    # 測試用範例資料
+    condition_dict = load_and_sample_data('./database/info_df.csv')
 
-    # 假設 detail_info 是從某個地方獲取的資料
-    detail_info = [{'適合兒童': True, '無障礙': False, '內用座位': True}]  # 示例資料
+    detail_info = [{'無障礙': False}]
 
-    # 執行 pandas_search 並打印結果
     result = pandas_search(condition_dict, detail_info)
-    print("result如下")
-    print(result[1])  # 打印執行結果
+    print(f"找到 {len(result)} 個符合條件的景點")
+    if result:
+        print("第一筆資料範例:")
+        print(result[0])
