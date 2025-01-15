@@ -6,22 +6,10 @@
 ## Basic Usage
 
 ```python
-from main.main_trip.controllers.controller import TripController
-from dotenv import load_dotenv
-import os
-
-# 初始化設定
-load_dotenv()
-config = {
-    'jina_url': os.getenv('jina_url'),
-    'jina_headers_Authorization': os.getenv('jina_headers_Authorization'),
-    'qdrant_url': os.getenv('qdrant_url'),
-    'qdrant_api_key': os.getenv('qdrant_api_key'),
-    'ChatGPT_api_key': os.getenv('ChatGPT_api_key')
-}
+from main.main_trip.controllers.controller import TripController, init_config
 
 # 建立控制器實例
-controller = TripController(config)
+controller = TripController(init_config())
 
 # 處理使用者輸入
 user_input = "想去台北文青的地方，吃午餐要便宜又好吃，下午想去逛有特色的景點，晚餐要可以跟朋友聚餐"
@@ -51,6 +39,7 @@ jina_headers_Authorization=your_authorization
 qdrant_url=your_qdrant_url
 qdrant_api_key=your_api_key
 ChatGPT_api_key=your_chatgpt_api_key
+GOOGLE_MAPS_API_KEY=your_google_maps_api_key
 ```
 
 ## 系統流程
