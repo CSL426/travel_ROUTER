@@ -1,49 +1,3 @@
-import os
-from dotenv import load_dotenv
-from linebot import LineBotApi
-from linebot.models import FlexSendMessage, CarouselContainer, BubbleContainer
-from First_bubble import First
-from Second_bubble import Second
-from Third_bubble import Third
-from Fourth_bubble import Fourth
-
-load_dotenv()
-
-# 從 .env 檔案讀取環境變數
-LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
-LINE_USER_ID = os.getenv("LINE_USER_ID")
-
-# 初始化 LineBotApi 物件
-line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
-
-# 修正 data 格式，應該用列表包裹各個字典
-data = [
-    {
-        "placeID": {
-            "name": "星巴克 信義南山門市",
-            "rating": 4.2,
-            "address": "110台北市信義區松仁路100號2F",
-            "url": "https://maps.app.goo.gl/rB97sxDJbqmx9UE36"
-        }
-    },
-    {
-        "placeID": {
-            "name": "BUNA CAF'E 布納咖啡館 信義館",
-            "rating": 4.7,
-            "address": "110台北市信義區信義路四段415之3號",
-            "url": "https://maps.app.goo.gl/XS5FeBkM7y7zCmiGA"
-        }
-    },
-    {
-        "placeID": {
-            "name": "CAFE!N 硬咖啡 吳興門市",
-            "rating": 4.2,
-            "address": "110台北市信義區吳興街8巷2號",
-            "url": "https://maps.app.goo.gl/Yid2UJkhLKvVhycJ7"
-        }
-    }
-]
-
 def thinking(data):
     # 定義商店評分圖標
     icon = {
@@ -170,16 +124,5 @@ def thinking(data):
 
         # 將每個bubble加入到contents列表中
         contents.append(bubble)
-
     # 返回所有的Bubble列表
     return contents
-
-
-# 使用 CarouselContainer 包裹 bubble 列表
-carousel = CarouselContainer(contents=thinking(data))
-
-# 建立 Flex 訊息
-flex_message = FlexSendMessage(alt_text="Travel recommendations", contents=carousel)
-
-# 發送訊息給 LINE 使用者
-line_bot_api.push_message(LINE_USER_ID, flex_message)
