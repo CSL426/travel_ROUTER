@@ -1,28 +1,35 @@
 # main.py
 
+from typing import Dict, List
 from dotenv import load_dotenv
 import os
 
 from main.main_trip.controllers.controller import TripController, init_config
 
 
-def run_trip_planner(text: str) -> str:
+def run_trip_planner(text: str,
+                     previous_trip: List[Dict] = None,
+                     restart_index: int = None) -> List[Dict]:
     """執行行程規劃
 
-    輸入:
+    Args:
         text: str - 使用者輸入的需求描述
-              例如: "想去台北文青的地方，午餐要吃美食"
+        previous_trip: List[Dict] - 之前規劃的行程(選填)
+        restart_index: int - 從哪個行程點重新開始(選填)
 
-    回傳:
+    Returns:
         str - 完整的行程規劃結果
     """
     try:
         controller_instance = TripController(init_config())
 
-        result = controller_instance.process_message(text)
-        controller_instance.trip_planner.print_itinerary(
-            result,
+        result = controller_instance.process_message(
+            input_text=text,
+            previous_trip=previous_trip,
+            restart_index=restart_index
         )
+
+        controller_instance.trip_planner.print_itinerary(result)
         return result
 
     except Exception as e:
@@ -33,4 +40,3 @@ def run_trip_planner(text: str) -> str:
 if __name__ == "__main__":
     test_input = "想去台北文青的地方，吃午餐要便宜又好吃，下午想去逛有特色的景點，晚餐要可以跟朋友聚餐"
     result = run_trip_planner(test_input)
-    a = 1

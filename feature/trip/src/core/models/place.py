@@ -106,10 +106,10 @@ class PlaceDetail(BaseModel):
     def _get_default_duration(label: str) -> int:
         """根據地點類型取得預設停留時間
 
-        輸入參數:
+        Args:
             label (str): 地點類型標籤
 
-        回傳:
+        Returns:
             int: 預設停留時間(分鐘)
         """
         durations = {
@@ -160,12 +160,12 @@ class PlaceDetail(BaseModel):
     def calculate_distance(self, other: Union['PlaceDetail', Dict]) -> float:
         """計算與另一個地點的距離
 
-        輸入:
+        Args:
             other: 另一個地點
                 - 可以是 PlaceDetail 物件
                 - 或包含 lat/lon 的字典
 
-        回傳:
+        Returns:
             float: 兩點間距離(公里)
 
         使用範例:
@@ -202,7 +202,7 @@ class PlaceDetail(BaseModel):
     def is_open_at(self, day: int, time_str: str) -> bool:
         """檢查指定時間是否在營業時間內
 
-        輸入:
+        Args:
             day: 1-7 代表週一到週日
             time_str: "HH:MM" 格式時間
         """
@@ -237,10 +237,10 @@ class PlaceDetail(BaseModel):
         - 晚餐時間前後一小時是晚餐行程
         - 晚餐後是晚上行程
 
-        輸入:
+        Args:
             current_time (datetime): 要檢查的時間
 
-        回傳:
+        Returns:
             bool: True 表示適合，False 表示不適合
         """
         from ..services.time_service import TimeService
@@ -259,11 +259,11 @@ class PlaceDetail(BaseModel):
     def get_next_available_time(self, current_day: int, current_time: str) -> Optional[Dict]:
         """取得下一個營業時間
 
-        輸入:
+        Args:
             current_day: 1-7代表週一到週日
             current_time: "HH:MM"格式時間
 
-        回傳:
+        Returns:
             Dict: {
                 'day': int,
                 'start': str,

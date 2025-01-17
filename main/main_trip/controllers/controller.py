@@ -16,7 +16,7 @@ class TripController:
         """
         初始化控制器
 
-        輸入:
+        Args:
             config: dict，包含所需的所有設定
                 - jina_url: Jina AI 的 URL
                 - jina_headers_Authorization: Jina 認證金鑰
@@ -27,14 +27,19 @@ class TripController:
         self.config = config
         self.trip_planner = TripPlanningSystem()
 
-    def process_message(self, input_text: str) -> str:
+    def process_message(self,
+                        input_text: str,
+                        previous_trip: List[Dict] = None,
+                        restart_index: int = None) -> List[Dict]:
         """
         處理輸入訊息並返回結果
 
-        輸入:
-            input_text (str): 使用者輸入文字，例如"想去台北文青的地方"
+        Args:
+            input_text: 使用者輸入文字
+            previous_trip: 之前的行程(選填)
+            restart_index: 從哪個點重新開始(選填)
 
-        輸出:
+        Returns:
             str: 規劃好的行程或錯誤訊息
         """
         try:
@@ -50,7 +55,12 @@ class TripController:
             location_details = self._get_places(placeIDs, unique_requirement)
 
             # 4. 規劃行程
-            return self._plan_trip(location_details, base_requirement)
+            return self._plan_trip(
+                location_details=location_details,
+                base_requirement=base_requirement,
+                previous_trip=previous_trip,
+                restart_index=restart_index,
+            )
 
         except Exception as e:
             return f"抱歉，系統發生錯誤: {str(e)}"
@@ -59,10 +69,10 @@ class TripController:
         """
         分析使用者意圖
 
-        輸入:
+        Args:
             text (str): 使用者輸入
 
-        輸出:
+        Returns:
             Tuple[List[Dict], List[Dict], List[Dict[str, Union[int, str, None]]]]:
                 - List[Dict]: 旅遊各時段形容詞 (對應圖中的 'a')
                 - List[Dict]: 特殊需求 (對應圖中的 'b')
@@ -76,7 +86,7 @@ class TripController:
         """
         平行處理多個時段的向量搜尋
 
-        輸入:
+        Args:
             period_describe: List[Dict] 
                 各時段的描述，例如：
                 [
@@ -84,7 +94,7 @@ class TripController:
                     {'中餐': '餐廳描述'}
                 ]
 
-        輸出:
+        Returns:
             Dict: 各時段對應的景點ID
                 {
                     '上午': ['id1', 'id2', ...],
@@ -132,7 +142,7 @@ class TripController:
         """
         從資料庫取得景點詳細資料
 
-        輸入:
+        Args:
             placeIDs: Dict 
                 各時段的景點ID，格式如：
                 {
@@ -143,7 +153,7 @@ class TripController:
                 使用者的特殊需求，例如：
                 [{'無障礙': True, '適合兒童': True}]
 
-        輸出:
+        Returns:
             List[Dict]: 景點的詳細資料列表
         """
         unique_requirement = [{'無障礙': False}]
@@ -153,21 +163,29 @@ class TripController:
             detail_info=unique_requirement
         )
 
-    def _plan_trip(self, location_details: List[Dict], base_requirement: List[Dict]) -> str:
-        """
-        根據景點資料和基本需求規劃行程
+    def _plan_trip(self,
+                   location_details: List[Dict],
+                   base_requirement: List[Dict],
+                   previous_trip: List[Dict] = None,
+                   restart_index: int = None) -> List[Dict]:
+        """根據景點資料和基本需求規劃行程
 
-        輸入:
-            location_details: List[Dict] 
-                景點詳細資料列表
-            base_requirement: List[Dict]
-                基本需求，如時間、交通方式等
+        Args:
+            location_details: List[Dict] - 景點詳細資料列表
+            base_requirement: List[Dict] - 基本需求，如時間、交通方式等
+            previous_trip: List[Dict] - 之前規劃的行程(選填)
+            restart_index: int - 從哪個行程點重新開始(選填)
 
-        輸出:
-            str: 格式化的行程規劃結果
+        Returns:
+            List[Dict]: 格式化的行程規劃結果
         """
         # 使用已初始化的 trip_planner
-        return self.trip_planner.plan_trip(location_details, base_requirement)
+        return self.trip_planner.plan_trip(
+            locations=location_details,
+            requirement=base_requirement,
+            previous_trip=previous_trip,
+            restart_index=restart_index
+        )
 
 
 def init_config():
@@ -175,7 +193,7 @@ def init_config():
 
     載入環境變數並整理成設定字典
 
-    回傳:
+    Returns:
         dict: 包含所有 API 設定的字典，包括:
             - jina_url: Jina API 端點
             - jina_headers_Authorization: Jina 認證金鑰
@@ -209,9 +227,7 @@ if __name__ == "__main__":
 
         test_input = "想去台北文青的地方，吃午餐要便宜又好吃，下午想去逛有特色的景點，晚餐要可以跟朋友聚餐"
         result = controller_instance.process_message(test_input)
-        controller_instance.trip_planner.print_itinerary(
-            result,
-        )
+        controller_instance.trip_planner.print_itinerary(result)
 
     except Exception as e:
         print("DEBUG: ", str(e))  # 完整錯誤訊息

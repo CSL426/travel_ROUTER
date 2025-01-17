@@ -5,14 +5,14 @@ from .sample_data import load_and_sample_data
 
 def pandas_search(condition_data: dict, detail_info: list[dict]) -> list[dict]:
     '''
-    輸入:
+    Args:
         condition_data: dict
             key: 時段名稱(上午/中餐/下午/晚餐/晚上)
             value: 該時段的place_id列表
         detail_info: list[dict]
             使用者的特殊需求，例如 [{'適合兒童': True, '無障礙': False, '內用座位': True}]
 
-    輸出:
+    Returns:
         list[dict]: 符合條件的景點資料列表，每個景點包含:
             - place_id: 景點ID
             - name: 景點名稱

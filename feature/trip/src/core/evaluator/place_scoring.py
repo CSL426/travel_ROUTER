@@ -156,7 +156,7 @@ class PlaceScoring:
             place: 要評分的地點
             current_location: 當前位置
 
-        回傳:
+        Returns:
             float: 0-1 之間的距離分數，越近分數越高
         """
         # 計算實際距離
@@ -241,7 +241,7 @@ class PlaceScoring:
             place: 要評分的地點
             current_time: 當前時間
 
-        回傳:
+        Returns:
             float: 0-1 之間的適合度分數
         """
         weekday = current_time.isoweekday()
@@ -280,7 +280,7 @@ class PlaceScoring:
             slot: 營業時段資訊
             duration_min: 預計停留時間
 
-        回傳:
+        Returns:
             float: 0-1 之間的分數
         """
         # 解析結束時間
@@ -318,7 +318,7 @@ class PlaceScoring:
         參數:
             score: 原始評分
 
-        回傳:
+        Returns:
             float: 標準化後的評分（0-1之間）
         """
         return max(self.min_score, min(self.max_score, score))

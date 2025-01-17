@@ -1,7 +1,7 @@
 # src/core/planner/system.py
 
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Dict, List
 from ..evaluator.place_scoring import PlaceScoring
 from ..models.place import PlaceDetail
@@ -38,37 +38,28 @@ class TripPlanningSystem:
 
         # 初始化策略系統
         self.strategy = None
-        
+
         # 初始化時間相關屬性
         self.start_time = None
         self.end_time = None
-        
+
         # 執行狀態追蹤
         self.execution_time = 0.0
 
-    def plan_trip(self, locations: List[Dict], requirement: Dict) -> List[Dict]:
+    def plan_trip(self,
+                  locations: List[Dict],
+                  requirement: Dict,
+                  previous_trip: List[Dict] = None,
+                  restart_index: int = None) -> List[Dict]:
         """執行行程規劃
 
-        輸入參數:
-            locations: List[Dict] - 所有可用地點的資料，每個地點包含:
-                - name: str - 地點名稱
-                - lat: float - 緯度
-                - lon: float - 經度
-                - duration: int - 建議停留時間(分鐘)
-                - label: str - 地點類型
-                - period: str - 適合的時段
-                - hours: Dict - 營業時間
-                - url: str - 地點網址
+        Args:
+            locations: 可用的景點列表
+            requirement: 規劃需求
+            previous_trip: 之前規劃的行程(選填)
+            restart_index: 從哪個點重新開始(選填)
 
-            requirement: Dict - 使用者的規劃需求，包含:
-                - start_time: str - 開始時間(HH:MM)
-                - end_time: str - 結束時間(HH:MM)
-                - lunch_time: str - 午餐時間(HH:MM)
-                - dinner_time: str - 晚餐時間(HH:MM)
-                - transport_mode: str - 交通方式
-                - distance_threshold: float - 最大可接受距離(公里)
-
-        回傳:
+        Returns:
             List[Dict]: 規劃好的行程列表
         """
         start_time = datetime.now()
@@ -77,28 +68,23 @@ class TripPlanningSystem:
             # 把 requirement 的 key 中文改成英文
             requirement = self._convert_keys(requirement)
 
-            # 設定預設值
-            default_requirement = {
-                "start_time": "09:00",        # 預設早上9點開始
-                "end_time": "21:00",          # 預設晚上9點結束
-                "start_point": "台北車站",     # 預設起點
-                "end_point": None,            # 預設終點（會使用起點）
-                "transport_mode": "driving",   # 預設開車
-                "distance_threshold": 30,      # 預設最大30公里
-                "lunch_time": "12:00",        # 預設中午12點午餐
-                "dinner_time": "18:00"        # 預設晚上6點晚餐
-            }
-            # 更新預設值，只使用非 None 的使用者設定
-            for key, value in requirement.items():
-                if value is not None:
-                    default_requirement[key] = value
+            # 如果要從中間開始規劃
+            if previous_trip and restart_index is not None:
+                # 取得之前行程的最後一個點
+                restart_point = previous_trip[restart_index-1]
+                # 修改開始時間
+                requirement['start_time'] = restart_point['end_time']
+                requirement['start_point'] = restart_point['name']
 
-            # 使用更新後的設定值
-            requirement = default_requirement
-            
+            requirement = self._set_defaults(requirement)
+
             # 設定時間屬性
-            self.start_time = datetime.strptime(requirement['start_time'], '%H:%M')
-            self.end_time = datetime.strptime(requirement['end_time'], '%H:%M')
+            self.start_time = datetime.strptime(
+                requirement['start_time'], '%H:%M'
+            )
+            self.end_time = datetime.strptime(
+                requirement['end_time'], '%H:%M'
+            )
 
             # 設定起點和終點
             self.start_location = self._get_start_location(
@@ -123,8 +109,8 @@ class TripPlanningSystem:
 
             # 準備規劃上下文
             context = {
-                'start_time': datetime.strptime(requirement['start_time'], '%H:%M'),
-                'end_time': datetime.strptime(requirement['end_time'], '%H:%M'),
+                'start_time': self.start_time,
+                'end_time': self.end_time,
                 'travel_mode': requirement.get('transport_mode', 'driving'),
                 'distance_threshold': requirement.get('distance_threshold', 30),
                 'start_location': self.start_location,
@@ -143,7 +129,8 @@ class TripPlanningSystem:
             itinerary = self.strategy.execute(
                 current_location=self.start_location,
                 available_places=available_places,
-                current_time=context['start_time']
+                current_time=context['start_time'],
+                previous_trip=previous_trip[:restart_index] if previous_trip else None
             )
 
             # 記錄執行時間
@@ -167,7 +154,7 @@ class TripPlanningSystem:
             locations: 已轉換為 PlaceDetail 的地點列表
             requirement: 包含規劃需求的字典
 
-        回傳:
+        Returns:
             Dict: 完整的規劃上下文
         """
         # 從 requirement 中取得起點，如果沒有則使用預設值
@@ -201,7 +188,7 @@ class TripPlanningSystem:
     def print_itinerary(self, itinerary: List[Dict], show_navigation: bool = False) -> None:
         """輸出行程規劃結果
 
-        輸入參數:
+        Args:
             itinerary: List[Dict] - 規劃好的行程列表
             show_navigation: bool - 是否顯示詳細導航資訊
         """
@@ -245,10 +232,10 @@ class TripPlanningSystem:
 
         將起點資訊轉換為 PlaceDetail 物件
 
-        輸入參數:
+        Args:
             start_point: str - 起點的名稱
 
-        回傳:
+        Returns:
             PlaceDetail - 起點的完整資訊物件
         """
         # 準備預設的起點資料
@@ -285,10 +272,10 @@ class TripPlanningSystem:
         如果沒有指定終點，會使用起點作為終點
         如果指定了終點，會取得該地點的詳細資訊
 
-        輸入參數:
+        Args:
             end_point: Optional[str] - 終點名稱，可以是 None
 
-        回傳:
+        Returns:
             PlaceDetail - 終點的完整資訊物件
         注意:
             - 如果end_point為none,使用起點資料但更新period
@@ -340,7 +327,7 @@ class TripPlanningSystem:
         """
         轉換需求字典的中文 key 為英文
 
-        輸入參數:
+        Args:
             requirement: Dict - 使用中文 key 的需求字典
                 {
                     "出發時間": "00:00" | "none",
@@ -348,7 +335,7 @@ class TripPlanningSystem:
                     ...
                 }
 
-        回傳:
+        Returns:
             Dict: 使用英文 key 的需求字典
                 {
                     "start_time": "00:00" | "none",
@@ -399,3 +386,86 @@ class TripPlanningSystem:
             converted[eng_key] = value
 
         return converted
+
+    def _set_defaults(self, requirement: Dict) -> Dict:
+        """設定預設值
+
+        Args:
+            requirement: 使用者提供的需求字典
+
+        Returns:
+            Dict: 包含預設值的完整需求字典
+        """
+        # 確保時間有值
+        start_time = requirement.get('start_time') or "09:00"
+        end_time = requirement.get('end_time') or "21:00"
+
+        # 轉換時間格式
+        start_dt = datetime.strptime(start_time, '%H:%M')
+        end_dt = datetime.strptime(end_time, '%H:%M')
+
+        # 設定午餐時間範圍
+        earliest_lunch = datetime.strptime("11:00", '%H:%M')
+        latest_lunch = datetime.strptime("13:00", '%H:%M')
+
+        # 計算預設午餐時間
+        if end_dt < earliest_lunch:
+            # 結束時間在午餐前,不安排午餐
+            default_lunch_str = None
+        elif start_dt >= latest_lunch:
+            # 開始時間太晚,不安排午餐
+            default_lunch_str = None
+        elif start_dt >= earliest_lunch:
+            # 開始時間在11:00-13:00之間,用開始時間後30分鐘
+            lunch_dt = start_dt + timedelta(minutes=30)
+            if lunch_dt > latest_lunch:
+                lunch_dt = latest_lunch
+            if lunch_dt > end_dt:
+                default_lunch_str = None
+            else:
+                default_lunch_str = lunch_dt.strftime('%H:%M')
+        else:
+            # 開始時間夠早,用預設12:00
+            default_lunch_str = "12:00"
+            if end_dt >= datetime.strptime("12:00", '%H:%M'):
+                default_lunch_str = "12:00"
+            else:
+                default_lunch_str = None
+
+        # 設定晚餐時間
+        earliest_dinner = datetime.strptime("16:30", '%H:%M')
+        latest_dinner = datetime.strptime("20:00", '%H:%M')
+
+        # 計算預設晚餐時間
+        if end_dt <= earliest_dinner:
+            # 結束時間比最早晚餐時間還早,不安排晚餐
+            default_dinner_str = None
+        elif end_dt <= latest_dinner:
+            # 結束時間在17:00-19:00之間,用最早晚餐時間
+            default_dinner_str = earliest_dinner.strftime('%H:%M')
+        elif end_dt >= datetime.strptime("21:30", '%H:%M'):
+            # 結束時間較晚,用最晚晚餐時間
+            default_dinner_str = latest_dinner.strftime('%H:%M')
+        else:
+            # 結束時間在19:00-21:00之間,用結束時間-2小時
+            dinner_dt = end_dt - timedelta(hours=2)
+            default_dinner_str = dinner_dt.strftime('%H:%M')
+
+        # 預設值定義
+        default_requirement = {
+            "start_time": start_time,
+            "end_time": end_time,
+            "start_point": "台北車站",
+            "end_point": None,
+            "transport_mode": "driving",
+            "distance_threshold": 30,
+            "lunch_time": default_lunch_str,
+            "dinner_time": default_dinner_str
+        }
+
+        # 更新預設值
+        for key, value in requirement.items():
+            if value is not None:
+                default_requirement[key] = value
+
+        return default_requirement

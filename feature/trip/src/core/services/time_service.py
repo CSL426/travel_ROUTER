@@ -24,7 +24,7 @@ class TimeService:
     def __init__(self, lunch_time: str = "12:00", dinner_time: str = "18:00"):
         """初始化時間服務
 
-        輸入參數:
+        Args:
             lunch_time: str - 中餐時間,格式 "HH:MM" 
             dinner_time: str - 晚餐時間,格式 "HH:MM"
         """
@@ -48,10 +48,10 @@ class TimeService:
         3. afternoon -> dinner: 到達晚餐時間  
         4. dinner -> night: 完成晚餐
 
-        輸入參數:
+        Args:
             current_time: datetime - 要判斷的時間點
 
-        回傳:
+        Returns:
             str - 時段名稱('morning'/'lunch'/'afternoon'/'dinner'/'night')
         """
 
@@ -88,7 +88,7 @@ class TimeService:
 
         只有在正確的用餐時段選擇餐廳時才更新狀態
 
-        輸入參數:
+        Args:
             place_period: str - 地點的時段類型('lunch'/'dinner')
         """
         if place_period == 'lunch' and self.current_period == 'lunch':
@@ -118,7 +118,7 @@ class TimeService:
         參數:
             time_str: HH:MM 格式的時間字串
 
-        回傳:
+        Returns:
             time: 解析後的 time 物件，如果輸入無效則回傳 None
         """
         if not time_str:
@@ -140,7 +140,7 @@ class TimeService:
             start_time: 開始時間 (HH:MM格式)
             end_time: 結束時間 (HH:MM格式)
 
-        回傳:
+        Returns:
             Tuple[time, time]: (開始時間, 結束時間)
 
         異常:
@@ -168,7 +168,7 @@ class TimeService:
         參數:
             time_str: 要驗證的時間字串
 
-        回傳:
+        Returns:
             bool: True 表示格式正確，False 表示格式錯誤
 
         使用範例:
@@ -197,7 +197,7 @@ class TimeService:
             end_time: 結束時間（HH:MM 格式）
             allow_overnight: 是否允許跨日，預設為 False
 
-        回傳:
+        Returns:
             bool: True 表示有效的時間範圍
 
         使用範例:
@@ -231,7 +231,7 @@ class TimeService:
                      - time 物件
                      - HH:MM 格式的時間字串
 
-        回傳:
+        Returns:
             str: 時段名稱
 
         使用範例:
@@ -296,7 +296,7 @@ class TimeService:
             base_time: 基準時間
             minutes: 要增加的分鐘數（可以是負數）
 
-        回傳:
+        Returns:
             time: 計算後的新時間
         """
         # 先轉換為 datetime 以便計算
@@ -326,7 +326,7 @@ class TimeService:
                   }
             duration_minutes: 預計停留時間（分鐘）
 
-        回傳:
+        Returns:
             Tuple[bool, Optional[int]]: 
             - 第一個值表示是否在營業時間內
             - 第二個值表示可停留時間（分鐘），若不在營業時間內則為None
@@ -399,7 +399,7 @@ class TimeService:
             end: 結束時間
             allow_overnight: 是否允許跨日(例如夜市營業時間)
 
-        回傳:
+        Returns:
             bool: True表示在範圍內
         """
         if allow_overnight and end < start:
@@ -418,7 +418,7 @@ class TimeService:
             start: 開始時間
             end: 結束時間
 
-        回傳:
+        Returns:
             int: 分鐘數
         """
         start_dt = datetime.combine(datetime.today(), start)
@@ -434,7 +434,7 @@ class TimeService:
             start: 開始時間
             end: 結束時間（隔天）
 
-        回傳:
+        Returns:
             int: 分鐘數
         """
         start_dt = datetime.combine(datetime.today(), start)
@@ -455,7 +455,7 @@ class TimeService:
             interval2: 第二個時間區間 (開始時間, 結束時間)
             allow_overnight: 是否允許跨日判斷，預設為 False
 
-        回傳:
+        Returns:
             bool: True 表示有重疊，False 表示無重疊
 
         使用範例:
@@ -501,7 +501,7 @@ class TimeService:
             business_hours: 營業時間設定
             duration_minutes: 需要的時間長度（分鐘）
 
-        回傳:
+        Returns:
             Dict: 包含以下資訊的字典：
                 {
                     'day': int,          # 星期幾（1-7）
@@ -586,7 +586,7 @@ class TimeService:
             target_dt: 目標日期
             target_time: 目標時間
 
-        回傳:
+        Returns:
             int: 需要等待的分鐘數
         """
         target_dt = datetime.combine(target_dt.date(), target_time)
