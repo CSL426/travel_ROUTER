@@ -1,22 +1,27 @@
+from dotenv import dotenv_values
+from flask import Flask, request, abort
 from linebot import LineBotApi
 from linebot.webhook import WebhookHandler
 from linebot.exceptions import InvalidSignatureError  # 確保這是從新版 SDK 來的
-import os
-from dotenv import load_dotenv
-from flask import Flask, request, abort
 from linebot.models import MessageEvent, TextMessage, FlexSendMessage
+from linebot.models import FlexSendMessage, CarouselContainer
+
 from feature.line.bubbles_seting.First_bubble import First
 from feature.line.bubbles_seting.Second_bubble import Second
 from feature.line.bubbles_seting.Third_bubble import Third
 from feature.line.Vibe import thinking  # 載入 Vibe 函數
-from linebot.models import FlexSendMessage, CarouselContainer
+
+from main.main_trip import run_trip_planner
 
 # 載入 .env 檔案中的環境變數
-load_dotenv()
+config = dotenv_values("./.env")
+if len(config) == 0:
+    print('please check .env path')
 
 # 讀取 LINE 的環境變數
-LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
-LINE_CHANNEL_SECRET = os.getenv("LINE_CHANNEL_SECRET")
+LINE_CHANNEL_ACCESS_TOKEN = config["LINE_CHANNEL_ACCESS_TOKEN"]
+LINE_CHANNEL_SECRET = config["LINE_CHANNEL_SECRET"]
+
 
 # 初始化 Flask 應用
 app = Flask(__name__)
@@ -51,9 +56,13 @@ def callback():
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     text_message = event.message.text
+
+    user_Q = text_message[4:]
+    text_message = text_message[0:4]
     
     if text_message == "旅遊推薦":
         # 預設的旅遊推薦資料
+        '''
         data = [
             {
                 "name": "家",
@@ -104,7 +113,9 @@ def handle_message(event):
                 }
             }
         ]
+        '''
 
+        data = run_trip_planner(user_Q)
         # 創建 carousel 的內容
         A1 = {
             "type": "carousel",
