@@ -1,28 +1,12 @@
-
 from feature.llm.LLM import LLM_Manager
 from feature.retrieval.qdrant_search import qdrant_search  # 修改這裡
 from feature.retrieval.utils import jina_embedding, json2txt, qdrant_control
 from feature.plan import CBRA
 from feature.sql import csv_read_2
 
-from dotenv import load_dotenv
-import os
+def recommandation(user_Q, config):
+    LLM_obj = LLM_Manager(config['ChatGPT_api_key']) # 初始化 LLM 物件
 
-# 載入環境變數
-load_dotenv()
-
-config = {
-    'jina_url': os.getenv('jina_url'),
-    'jina_headers_Authorization': os.getenv('jina_headers_Authorization'),
-    'qdrant_url': os.getenv('qdrant_url'),
-    'qdrant_api_key': os.getenv('qdrant_api_key'),
-    'ChatGPT_api_key': os.getenv('ChatGPT_api_key')
-}
-LLM_obj = LLM_Manager(config['ChatGPT_api_key'])
-
-
-
-def main(user_Q):
     one = user_Q
     results = LLM_obj.Cloud_fun(one)
     a = results[0] #LLM解析資料:形容客戶行程的一句話
@@ -44,5 +28,13 @@ def main(user_Q):
     return five
 
 if __name__ == "__main__":
-    five = main("請推薦好吃台北餐廳")
+    # 載入環境變數
+    from dotenv import dotenv_values
+    # 載入 .env 檔案中的環境變數
+    config = dotenv_values("./.env")
+    if len(config) == 0:
+        print('please check .env path')
+
+
+    five = recommandation("請推薦好吃台北餐廳", config)
     print(five)

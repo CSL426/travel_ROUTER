@@ -12,6 +12,7 @@ from feature.line.bubbles_seting.Third_bubble import Third
 from feature.line.Vibe import thinking  # 載入 Vibe 函數
 
 from main.main_trip import run_trip_planner
+from main.main_plan.recommandation_service import recommandation
 
 # 載入 .env 檔案中的環境變數
 config = dotenv_values("./.env")
@@ -57,7 +58,7 @@ def callback():
 def handle_message(event):
     text_message = event.message.text
 
-    user_Q = text_message[4:]
+    user_Q = text_message[5:]
     text_message = text_message[0:4]
     
     if text_message == "旅遊推薦":
@@ -134,25 +135,22 @@ def handle_message(event):
 
     elif text_message == "情境搜索":
         # 呼叫 Vibe 函數來生成情境搜索的資料
+        '''
         data = [
             {
-                "placeID": {
+                "placeID0": {
                     "name": "星巴克 信義南山門市",
                     "rating": 4.2,
                     "address": "110台北市信義區松仁路100號2F",
                     "url": "https://maps.app.goo.gl/rB97sxDJbqmx9UE36"
-                }
-            },
-            {
-                "placeID": {
+                },
+                "placeID1": {
                     "name": "BUNA CAF'E 布納咖啡館 信義館",
                     "rating": 4.7,
                     "address": "110台北市信義區信義路四段415之3號",
                     "url": "https://maps.app.goo.gl/XS5FeBkM7y7zCmiGA"
-                }
-            },
-            {
-                "placeID": {
+                },
+                "placeID2": {
                     "name": "CAFE!N 硬咖啡 吳興門市",
                     "rating": 4.2,
                     "address": "110台北市信義區吳興街8巷2號",
@@ -160,12 +158,15 @@ def handle_message(event):
                 }
             }
         ]
-        
+        '''
+
         # 呼叫 Vibe 函數來生成 bubble 資料
+        data = recommandation(user_Q, config)
         A2 = CarouselContainer(thinking(data))
+
         # 建立 Flex 訊息
         flex_message = FlexSendMessage(alt_text="Vibe recommendations", contents=A2)
-
+        
         # 回覆 Flex 訊息
         line_bot_api.reply_message(event.reply_token, flex_message)
 
@@ -173,7 +174,7 @@ def handle_message(event):
         # 如果收到其他訊息，回覆相同的文字訊息
         line_bot_api.reply_message(
             event.reply_token,
-            TextMessage(text=f"你說的是: {text_message}")
+            TextMessage(text=f"輸入 : \n1. 情境搜索: 你想搜尋的目標 \n2. 旅遊推薦: 你想去的旅遊")
         )
 
 

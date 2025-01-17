@@ -45,22 +45,24 @@ def thinking(data):
     contents = []
 
     # 迭代資料中的每個店鋪資料
-    for i in range(len(data)):
+    for point in data[0].values():
+        print(point)
         # 定義店鋪名稱顯示
         temp_loc = location.copy()
-        temp_loc['text'] = data[i]["placeID"]["name"]  # 將店鋪名稱替換為當前店鋪的名稱
+        temp_loc['text'] = point["name"]  # 將店鋪名稱替換為當前店鋪的名稱
 
         # 定義地址顯示
         temp_add = address.copy()
-        temp_add['text'] = data[i]["placeID"]["address"]  # 將地址替換為當前店鋪的地址
-
+        temp_add['text'] = point["address"]  # 將地址替換為當前店鋪的地址
+        
         # 定義評分顯示
         temp_rat = rating.copy()
-        temp_rat["text"] = str(data[i]["placeID"]["rating"])  # 將評分數字轉換為字符串，顯示在界面上
+        temp_rat["text"] = str(point["rating"])  # 將評分數字轉換為字符串，顯示在界面上
 
         # 定義URL按鈕顯示
         temp_url = url.copy()
-        temp_url["uri"] = data[i]["placeID"]["url"]  # 將URL替換為當前店鋪的網址
+        # temp_url["uri"] = point["url"]  # 將URL替換為當前店鋪的網址
+        temp_url["uri"] = 'https://example.com'
 
         # 拼接每個店鋪的Bubble格式資料
         bubble = {
