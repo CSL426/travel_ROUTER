@@ -22,8 +22,8 @@ def First(data):
         temp_loc = location.copy()
         temp_loc['text'] = data[i]["name"]
         temp_H = H.copy()
-        temp_H["text"] = data[i]["hours"]
-        
+        temp_H["text"] = '-'.join([data[i]['start_time'], data[i]['end_time']])    # 停留時刻
+
 
         # 將每個地點和按鈕整合
         contents_minimum = {

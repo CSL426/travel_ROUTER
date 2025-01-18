@@ -25,7 +25,7 @@ def Second(data):
         temp_loc['text'] = data[i]["name"]
 
         temp_H = H.copy()
-        temp_H["text"] = data[i]["hours"]
+        temp_H["text"] = '-'.join([data[i]['start_time'], data[i]['end_time']])   # 停留時刻
         
         # 修改交通時間顯示方式
         temp_traffic = traffic.copy()
