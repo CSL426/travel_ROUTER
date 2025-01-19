@@ -18,7 +18,7 @@ def Third(data):
         temp_loc['text'] = data[i]["name"]
 
         temp_H = H.copy()
-        temp_H["text"] = data[i]["hours"]
+        temp_H["text"] = '-'.join(data[i]["hours"].values())   # 開店時間
 
         contents_minimum = {
         "type": "box",
