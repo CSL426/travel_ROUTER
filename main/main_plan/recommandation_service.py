@@ -16,10 +16,10 @@ def recommandation(user_Q, config):
     c = results[2] #LLM解析資料:客戶基本要求資料
     print(c)
     qdrant_obj = qdrant_search(
-        collection_name='view_restaurant_test',
+        collection_name='view_restaurant',
         config=config,
-        score_threshold=0,
-        limit=100,
+        score_threshold=0.5,
+        limit=1000,
     )
     two = qdrant_obj.cloud_search(a) #透過llm的「形容客戶行程的一句話」，用向量資料庫去對比搜尋 
     three = csv_read_2.pandas_search(two, b) #透過向量資料庫跟llm的用戶特殊要求去抓出前100名符合的
