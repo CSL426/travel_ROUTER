@@ -1,15 +1,18 @@
 # utils
 > `placeID_list = [placeID1, placeID2, ....]`
 > placeID_list 經過篩選後 縮小程較少的 placeID_list 再繼續傳遞
+* ETL_dataframe = ETL_dataframe() ; 將 placeID 設成 index 的pandas dataframe
 
-1. placeID_list = classify_restaurant_or_view(  placeID_list,
-                                                classify: 'restaurant'|'view'
+* placeID_list = classify_restaurant_or_view(  placeID_list,
+                                                classify: 'restaurant'|'view',
+                                                ETL_dataframe,
                                                 )   ; 餐廳景點篩選  
-2. placeID_list = special_request(  placeID_list, 
-                                    request_list: list[dict]
+* placeID_list = special_request(   placeID_list, 
+                                    request_list: list[dict],
+                                    ETL_dataframe, 
                                     )   ; 特殊需求篩選
 
-3. point = make_point(placeID, system: "trip"|"plan")    ; 製作 <旅遊推薦|情境搜索> 端要的 point
+* point = make_point(placeID, system: "trip"|"plan")    ; 製作 <旅遊推薦|情境搜索> 端要的 point
 
 ---
 
