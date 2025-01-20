@@ -104,10 +104,10 @@ class TripController:
         try:
             # 建立 qdrant_search 實例
             qdrant_obj = qdrant_search(
-                collection_name='view_restaurant_test',
+                collection_name='view_restaurant',
                 config=self.config,
                 score_threshold=0.5,
-                limit=30
+                limit=1000
             )
             # period_describe = [
             #     {'上午': '喜歡在文青咖啡廳裡享受幽靜且美麗的裝潢'},
