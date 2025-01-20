@@ -20,10 +20,10 @@ COPY . /app/
 ENV PYTHONUNBUFFERED=1
 
 # 設置環境變數 PORT 為 5000 (本地開發端口)
-ENV PORT=5000
+ENV PORT=8080
 
 # 暴露應用端口
-EXPOSE 5000
+EXPOSE 8080
 
 # 設置容器啟動命令，使用 Poetry 來執行應用程式
 CMD ["poetry", "run", "python", "app.py"]

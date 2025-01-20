@@ -31,6 +31,10 @@ app = Flask(__name__)
 line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
 
+@app.route('/health')
+def health_check():
+    return 'OK', 200
+
 # 設定 /callback 路由，處理 LINE webhook 請求
 @app.route("/callback", methods=['POST'])
 def callback():
@@ -180,4 +184,4 @@ def handle_message(event):
 
 # 啟動 Flask 伺服器
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0", port=8080)
