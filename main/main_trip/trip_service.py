@@ -1,19 +1,19 @@
-# main.py
-
 from typing import Dict, List
-from dotenv import load_dotenv
-import os
 
-from main.main_trip.controllers.controller import TripController, init_config
+from main.main_trip import TripController, init_config
 
 
-def run_trip_planner(text: str,
-                     previous_trip: List[Dict] = None,
-                     restart_index: int = None) -> List[Dict]:
+def run_trip_planner(
+    text: str,
+    line_id: str = None,
+    previous_trip: List[Dict] = None,
+    restart_index: int = None,
+) -> List[Dict]:
     """執行行程規劃
 
     Args:
         text: str - 使用者輸入的需求描述
+        line_id: user's line id (選填)
         previous_trip: List[Dict] - 之前規劃的行程(選填)
         restart_index: int - 從哪個行程點重新開始(選填)
 

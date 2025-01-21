@@ -4,8 +4,9 @@ from typing import Dict, List, Tuple
 from concurrent.futures import ThreadPoolExecutor
 
 from feature.llm.LLM import LLM_Manager
-from feature.retrieval.qdrant_search import qdrant_search
+from feature.retrieval import qdrant_search
 from feature.sql import csv_read
+from feature.nosql_mongo import trip_db
 from feature.trip import TripPlanningSystem
 
 
@@ -27,15 +28,20 @@ class TripController:
         self.config = config
         self.trip_planner = TripPlanningSystem()
 
-    def process_message(self,
-                        input_text: str,
-                        previous_trip: List[Dict] = None,
-                        restart_index: int = None) -> List[Dict]:
+    def process_message(
+        self,
+        input_text: str,
+        line_id: str = None,
+        previous_trip: List[Dict] = None,
+        restart_index: int = None,
+
+    ) -> List[Dict]:
         """
         處理輸入訊息並返回結果
 
         Args:
             input_text: 使用者輸入文字
+            line_id: user's line id (選填)
             previous_trip: 之前的行程(選填)
             restart_index: 從哪個點重新開始(選填)
 
@@ -43,29 +49,57 @@ class TripController:
             str: 規劃好的行程或錯誤訊息
         """
         try:
-            # 1. LLM意圖分析
-            period_describe, unique_requirement, base_requirement = self._analyze_intent(
-                input_text
+            if line_id is None:
+                line_id = "test_user_id"  # 這裡先寫死測試用
+
+            # 1. 記錄用戶輸入
+            trip_db.record_user_input(
+                line_id=line_id,
+                input_text=input_text
             )
 
-            # 2. 向量檢索
+            # 2. 取得歷史記錄給LLM
+            history = trip_db.get_input_history(line_id)
+            history_text = format_history_for_llm(history)
+
+            # 3. LLM意圖分析
+            period_describe, unique_requirement, base_requirement = (
+                self._analyze_intent(text=history_text)
+            )
+
+            # 4. 向量檢索
             placeIDs = self._vector_retrieval(period_describe)
 
-            # 3. 取得景點詳細資料
+            # 5. 取得景點詳細資料
             location_details = self._get_places(placeIDs, unique_requirement)
 
-            # 4. 規劃行程
-            return self._plan_trip(
+            # 6. 規劃行程
+            result = self._plan_trip(
                 location_details=location_details,
                 base_requirement=base_requirement,
                 previous_trip=previous_trip,
                 restart_index=restart_index,
             )
 
+            # 7. 儲存規劃結果
+            trip_db.save_plan(
+                line_id=line_id,
+                input_text=input_text,
+                requirement=base_requirement,
+                itinerary=result
+            )
+
+            return result
+
         except Exception as e:
             return f"抱歉，系統發生錯誤: {str(e)}"
 
-    def _analyze_intent(self, text: str) -> Tuple[List[Dict], List[Dict], List[Dict]]:
+    def _analyze_intent(
+        self,
+        text: str,
+        requirement: List[Dict] = None,
+        previous_trip: List[Dict] = None,
+    ) -> Tuple[List[Dict], List[Dict], List[Dict]]:
         """
         分析使用者意圖
 
@@ -163,11 +197,13 @@ class TripController:
             detail_info=unique_requirement
         )
 
-    def _plan_trip(self,
-                   location_details: List[Dict],
-                   base_requirement: List[Dict],
-                   previous_trip: List[Dict] = None,
-                   restart_index: int = None) -> List[Dict]:
+    def _plan_trip(
+        self,
+        location_details: List[Dict],
+        base_requirement: List[Dict],
+        previous_trip: List[Dict] = None,
+        restart_index: int = None
+    ) -> List[Dict]:
         """根據景點資料和基本需求規劃行程
 
         Args:
@@ -186,6 +222,33 @@ class TripController:
             previous_trip=previous_trip,
             restart_index=restart_index
         )
+
+
+def format_history_for_llm(history: List[Dict]) -> str:
+    """把歷史記錄格式化成適合LLM的文字格式
+
+    Args:
+        history: 從MongoDB取得的歷史記錄
+
+    Returns:
+        str: 格式化後的歷史文字
+    """
+    if not history:
+        return "目前沒有歷史對話記錄。"
+
+    # 按時間排序(雖然資料庫已排序,但再確保一次)
+    sorted_history = sorted(history, key=lambda x: x["timestamp"])
+
+    # 組合文字
+    formatted = "以下是用戶先前的對話記錄:\n\n"
+
+    for record in sorted_history:
+        # 格式化時間 (轉換成當地時間)
+        time_str = record["timestamp"].astimezone().strftime(
+            "%Y-%m-%d %H:%M")
+        formatted += f"{time_str}: {record['text']}\n"
+
+    return formatted
 
 
 def init_config():

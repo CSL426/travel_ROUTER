@@ -14,22 +14,10 @@ class TripDBHandler:
     3. 查詢歷史記錄 
     4. 錯誤處理
     """
-    _instance = None  # 類別層級的變數,用來存放實例
 
-    def __new__(cls):
-        # 第一次呼叫
-        if cls._instance is None:
-            # 1. 用父類別的__new__建立實例
-            cls._instance = super().__new__(cls)
-            # 2. 初始化這個實例的db連線
-            cls._instance.db = MongoDBManager()
-
-        # 之後的呼叫都直接返回第一次建立的實例
-        return cls._instance
-
-    # def __init__(self):
-    #     """初始化,取得資料庫連線"""
-    #     self.db = MongoDBManager()
+    def __init__(self):
+        """初始化,取得資料庫連線"""
+        self.db = MongoDBManager()
 
     def record_user_input(
         self,

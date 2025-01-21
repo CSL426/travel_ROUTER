@@ -11,6 +11,7 @@ from feature.line.bubbles_seting.Second_bubble import Second
 from feature.line.bubbles_seting.Third_bubble import Third
 from feature.line.Vibe import thinking  # 載入 Vibe 函數
 
+from feature.nosql_mongo import trip_db
 from main.main_trip import run_trip_planner
 from main.main_plan.recommandation_service import recommandation
 

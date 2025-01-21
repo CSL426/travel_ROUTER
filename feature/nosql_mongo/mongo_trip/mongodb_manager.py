@@ -7,7 +7,7 @@ from pymongo.errors import PyMongoError
 
 class MongoDBManager:
     """
-    MongoDB連線管理
+    MongoDB連線管理 (Singleton)
 
     負責:
         1. 管理資料庫連線
@@ -16,27 +16,27 @@ class MongoDBManager:
         4. 錯誤處理
     """
 
-    def __init__(self):
+    _instance = None
+    
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            cls._instance._initialize()
+        return cls._instance
+        
+    def _initialize(self):
+        """初始化資料庫連線"""
         try:
-            # 載入環境變數
             load_dotenv()
-
-            # 從環境變數取得連線字串
-            MONGODB_URI = os.getenv(
-                'MONGODB_URI',
-                "mongodb://localhost:27017"
-            )
-
+            MONGODB_URI = os.getenv('MONGODB_URI', "mongodb://localhost:27017")
+            
             self.client = MongoClient(MONGODB_URI)
             self.db = self.client.travel_router
-
-            # 建立collections
             self.planner_records = self.db.planner_records
             self.user_preferences = self.db.user_preferences
-
-            # 建立索引
+            
             self._create_indexes()
-
+            
         except PyMongoError as e:
             print(f"MongoDB連線失敗: {str(e)}")
             raise
