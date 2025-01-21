@@ -43,7 +43,7 @@ def plan_point_make(place_ID: str, retrival_score: float, ETL_dataframe):
                 'placeID': place_ID,
                 'place_name': filter_series['place_name'],
                 'rating': int(filter_series['rating']),
-                'retrival_score': retrival_score,
+                'retrival_score': float(retrival_score),
                 'comments': int(filter_series['comments']),
                 'lat': float(filter_series['lat']),
                 'lon': float(filter_series['lon']),
