@@ -4,7 +4,7 @@
 * ETL_dataframe = ETL_dataframe() ; 將 placeID 設成 index 的pandas dataframe
 
 * placeID_list = classify_restaurant_or_view(  placeID_list,
-                                                classify: 'restaurant'|'view',
+                                                restaurant_view_classify: 'restaurant'|'view',
                                                 ETL_dataframe,
                                                 )   ; 餐廳景點篩選  
 * placeID_list = special_request(   placeID_list, 
@@ -16,7 +16,7 @@
 
 ---
 
-# 功能主函式
+<!-- # 功能主函式
 1. sql_pipeline.py 用法
 ```
 class SqlPlacePipeline:
@@ -32,15 +32,15 @@ class SqlPlacePipeline:
     def get_results(self):
     # 返回結果 placeID_list
 ```
-> 連結 篩選function 可以選擇: 要篩餐廳景點 or 要篩特殊需求
+> 連結 篩選function 可以選擇: 要篩餐廳景點 or 要篩特殊需求 -->
 
 
-2. sql.py 用法
-points = sql(   input: list|dict,
-                special_request_list: list[dict],
-                system: "trip"|"plan",
-                special_request: bool,
-            )
+1. sql.py 用法
+points = pandas_search(  
+                    system: str,
+                    system_input: list|dict, 
+                    special_request_list: list[dict] = [],
+                ) : 
 > 1. load 進 input
 > 2. 轉成 placeID_list
 > 3. 呼叫 SqlPlacePipeline

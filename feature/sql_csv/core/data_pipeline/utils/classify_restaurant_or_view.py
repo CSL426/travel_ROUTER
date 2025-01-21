@@ -1,4 +1,4 @@
-def classify_restaurant_or_view(placeID_list:list, 
+def classify_restaurant_or_view(placeID_list: list, 
                                 restaurant_view_classify: str,
                                 ETL_dataframe):
     '''
@@ -20,25 +20,19 @@ def classify_restaurant_or_view(placeID_list:list,
                             "購物商場", "文化/歷史景點", "自然景點", "一般商店", "甜品店/飲料店"]
     }
 
-    # 確認類別是否有效
-    if restaurant_view_classify not in classify_map:
-        print('不篩選餐廳或景點')
-        return []
-    
     # 篩選邏輯
-    else:
-        filtered_series = ETL_dataframe['new_label_type'].loc[placeID_list]
-        filtered_list = (
-            filtered_series[filtered_series.isin(classify_map[restaurant_view_classify])]
-            .index
-            .tolist()
-        )
+    filtered_series = ETL_dataframe['new_label_type'].loc[placeID_list]
+    filtered_list = (
+        filtered_series[filtered_series.isin(classify_map[restaurant_view_classify])]
+        .index
+        .tolist()
+    )
 
-        return filtered_list
+    return filtered_list
 
 
 if __name__ == '__main__':
-    from feature.sql_v2.utils.ETL_dataframe_generate import ETL_dataframe_generate
+    from feature.sql_csv.core.data_pipeline.utils.ETL_dataframe_generate import ETL_dataframe_generate
     placeID_list = [
                     'ChIJqelWmSGnQjQR0oQv0a6ZJ8o',    # 康小玲 線上書店交易平台 online bookstores
                     'ChIJI-NIexYdaDQRfldAuHBbwmY',    # 無名涼麵/雙醬涼麵/現場營業時間下午4~9點/線上營業時間24小時

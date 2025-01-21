@@ -48,7 +48,7 @@ ChIJHRHjiIOuQjQRwvkYlwIEcTQ     True
 
 
 if __name__ == '__main__':
-    from feature.sql_v2.utils.ETL_dataframe_generate import ETL_dataframe_generate
+    from feature.sql_csv.core.data_pipeline.utils.ETL_dataframe_generate import ETL_dataframe_generate
     placeID_list = [
                     'ChIJqelWmSGnQjQR0oQv0a6ZJ8o',    # 康小玲      ['外帶外送', '其他支付']
                     'ChIJI-NIexYdaDQRfldAuHBbwmY',    # 無名涼麵    ['現金']
