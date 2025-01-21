@@ -1,6 +1,6 @@
 def special_request(    
                     placeID_list, 
-                    request_list: list[dict],
+                    special_request_list: list[dict],
                     ETL_dataframe, 
                     ): 
     '''
@@ -10,7 +10,7 @@ def special_request(
     ```
     Args:
         placeID_list (list): 包含 placeID 的列表 ['placeID1', 'placeID2', ....]
-        request_list (list[dict]): 篩選要求
+        special_request_list (list[dict]): 篩選要求
         ETL_dataframe : ETL_df 表 
     
     Returns:
@@ -22,7 +22,7 @@ def special_request(
 
     # 篩出 true 的選項 :    ['其他支付': true, '無障礙': true] -> ['其他支付', '無障礙']
     request_true_list = []
-    for key, value in request_list[0].items():
+    for key, value in special_request_list[0].items():
         if value == True:
             request_true_list.append(key)
 
@@ -57,13 +57,13 @@ if __name__ == '__main__':
                     ]
     ETL_dataframe = ETL_dataframe_generate()
 
-    request_list = [{'內用座位': False, '洗手間': False, '適合兒童': False, '適合團體': False, '現金': False,
+    special_request_list = [{'內用座位': False, '洗手間': False, '適合兒童': False, '適合團體': False, '現金': False,
           '其他支付': True, '收費停車': False, '免費停車': False, 'wi-fi': False, '無障礙': False}]
     
     # 預期篩出 SK-II
     placeID_list = special_request(
                         placeID_list=placeID_list,
-                        request_list=request_list,
+                        special_request_list=special_request_list,
                         ETL_dataframe=ETL_dataframe,
                     )
     
