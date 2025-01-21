@@ -1,5 +1,5 @@
 def classify_restaurant_or_view(placeID_list:list, 
-                                classify: str,
+                                restaurant_view_classify: str,
                                 ETL_dataframe):
     '''
     - 根據分類篩選 placeID_list 中的項目。
@@ -21,7 +21,7 @@ def classify_restaurant_or_view(placeID_list:list,
     }
 
     # 確認類別是否有效
-    if classify not in classify_map:
+    if restaurant_view_classify not in classify_map:
         print('不篩選餐廳或景點')
         return []
     
@@ -29,7 +29,7 @@ def classify_restaurant_or_view(placeID_list:list,
     else:
         filtered_series = ETL_dataframe['new_label_type'].loc[placeID_list]
         filtered_list = (
-            filtered_series[filtered_series.isin(classify_map[classify])]
+            filtered_series[filtered_series.isin(classify_map[restaurant_view_classify])]
             .index
             .tolist()
         )
