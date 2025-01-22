@@ -1,13 +1,15 @@
+import ast
 import openai
 import json
 from dotenv import load_dotenv
 import os
 import concurrent.futures  # 引入並行處理模組
 
+
 class LLM_Manager:
     def __init__(self, ChatGPT_api_key):
         openai.api_key = ChatGPT_api_key  # 使用 ChatGPT_api_key 來設定 OpenAI API 金鑰
-    
+
     def __Query(self, prompt, user_input, format):
         '''
         使用 OpenAI API 生成回應
@@ -29,12 +31,11 @@ class LLM_Manager:
         content = response['choices'][0]['message']['content'].strip()
         # 根據format不同進行處理
         if format == "list":
-            return json.loads(content)
+            return ast.literal_eval(content)
         elif format == "List[Dict]":
-            return [json.loads(content)]  # 返回字典列表格式
+            return [ast.literal_eval(content)]  # 返回字典列表格式
         elif format == "List[5 x Dict]":
-            return json.loads(content)
-        
+            return ast.literal_eval(content)
 
     def Thinking_fun(self, user_input):
         # 使用 ThreadPoolExecutor 來並行處理 API 請求
@@ -42,7 +43,8 @@ class LLM_Manager:
             futures = {
                 'Thinking_A': executor.submit(self.__Query, system_prompt.Thinking_A, user_input, "List[5 x Dict]"),
                 'Thinking_B': executor.submit(self.__Query, system_prompt.Thinking_B, user_input, "List[Dict]"),
-                'Thinking_C': executor.submit(self.__Query, system_prompt.Thinking_C, user_input, "List[Dict]")        
+                'Thinking_C': executor.submit(self.__Query, system_prompt.Thinking_C, user_input, "List[Dict]"),
+                'restart':executor.submit(self.__Query, system_prompt.restart, user_input, "List")
             }
 
             # 等待所有任務完成並取得結果
@@ -59,7 +61,7 @@ class LLM_Manager:
             futures = {
                 'Cloud_A': executor.submit(self.__Query, system_prompt.Cloud_A, user_input, "list"),
                 'Cloud_B': executor.submit(self.__Query, system_prompt.Cloud_B, user_input, "List[Dict]"),
-                'Cloud_C': executor.submit(self.__Query, system_prompt.Cloud_C, user_input, "List[Dict]")        
+                'Cloud_C': executor.submit(self.__Query, system_prompt.Cloud_C, user_input, "List[Dict]")
             }
 
             # 等待所有任務完成並取得結果
@@ -67,19 +69,27 @@ class LLM_Manager:
             for _, future in futures.items():
                 result = future.result()
                 Cloud.append(result)
-            
+
             return Cloud
 
     def store_fun(self, user_input):
-        result = self.__Query(system_prompt.store_recommend, user_input, "List[Dict]")
+        result = self.__Query(system_prompt.store_recommend,
+                              user_input, "List[Dict]")
         Store = result
         return Store
 
 
-
 class system_prompt:
+    restart='''
+            我有上一次的行程輸入與用戶輸入，幫我判斷用戶想要完全重新開始或是從哪個點開始重新規劃:
+            restart_index = 0: 完全重新規劃
+            restart_index = N: 從第N個點開始重新規劃,即第N個點後重新安排
+            '''
     Thinking_A = '''
-                你是個善於分辨形容的旅行助手。請針對用戶需求生成行程建議。請按照以下格式回應：
+                你是個善於分辨形容的旅行助手:
+                我有上一次的行程輸入、用戶需求與用戶輸入，幫我整合成新的建議，
+                若沒有上一次的行程輸入、用戶需求，請直接依照用戶輸入來生成，
+                請生成行程建議，請按照以下格式回應。
                 [
                     {"上午": ""}, 
                     {"中餐": ""}, 
@@ -105,6 +115,8 @@ class system_prompt:
                 """
     # Thinking_C "結束時間"判定會出問題,還需要修正
     Thinking_C = """
+                我有上一次的行程輸入、用戶需求與用戶輸入，幫我整合成新的建議，
+                若沒有上一次的行程輸入、用戶需求，請直接依照用戶輸入來生成，
                 請根據用戶需求來判斷並提供以下行程規劃資訊，如果沒有提到某個需求，請設為 "none",並按照下列格式回傳相應結果：
                 {
                     "出發時間": "00:00" | "none",
@@ -120,8 +132,8 @@ class system_prompt:
                     "出發日": "mm-dd" | "none"
                 }
                 """
-    store_recommend ="""
-                        根據用戶需求,判斷出用戶最有可能會想去的前三家店,並用以下格式輸出:
+    store_recommend = """
+                        根據用戶需求，判斷出用戶最有可能會想去的前三家店，並用以下格式輸出:
                             {{
                             placeID : { "name" : "店名",
                                         "rating" : float,
@@ -141,7 +153,7 @@ class system_prompt:
               根據用戶需求,生成一句簡短的敘述來形容使用者的喜好,形容客戶喜好的敘述,並使用下列格式輸出:
               [""] 
               """
-    Cloud_B =   """
+    Cloud_B = """
                 請根據用戶需求來判斷是否包含該條件，並按照下列格式回傳相應結果：
                 {{
                     "內用座位": true|false,
@@ -156,7 +168,7 @@ class system_prompt:
                     "無障礙": true|false
                 }}
                 """
-    Cloud_C =   """
+    Cloud_C = """
                 請根據用戶需求來判斷並提供以下行程規劃資訊，如果沒有提到某個需求，請設為 "none",並按照下列格式回傳相應結果：
                 {{
                     "星期別": int | "none",
@@ -182,5 +194,3 @@ if __name__ == "__main__":
     results = LLM_obj.Thinking_fun(user_input)
     # results = LLM_obj.Cloud_fun(user_input)
     print(results)
-
-
