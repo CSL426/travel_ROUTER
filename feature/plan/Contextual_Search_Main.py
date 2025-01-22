@@ -44,7 +44,7 @@ def main(points, user_requirements):
     if user_weekday != "none":
         matching_placeID.intersection_update(filter_by_weekday(points, user_weekday))
 
-    user_arrival_time = user_filters.get("hours")
+    user_arrival_time = user_filters.get("時間")
     if user_arrival_time != "none":
         matching_placeID.intersection_update(filter_by_time_without_weekday(points, user_arrival_time))
 
@@ -226,18 +226,18 @@ if __name__ == "__main__":
         }
     ]
 
-weights = {'distance': 0.2, 'comments': 0.4, 'similarity': 0.4}
+    weights = {'distance': 0.2, 'comments': 0.4, 'similarity': 0.4}
 
-results = filter_and_calculate_scores(points, user_requirements, weights)
-print("Filtered and Sorted Results:")
-for result in results:
-    pprint(result,sort_dicts=False) 
+    results = filter_and_calculate_scores(points, user_requirements, weights)
+    print("Filtered and Sorted Results:")
+    for result in results:
+        pprint(result,sort_dicts=False) 
 
-    # filtered_placeID = main(points, user_requirements)
-    # filtered_points = [point for point in points if point['placeID'] in filtered_placeID]
-    # sorted_results = calculate_weighted_scores(filtered_points, (25.0375, 121.5637), weights)
+        # filtered_placeID = main(points, user_requirements)
+        # filtered_points = [point for point in points if point['placeID'] in filtered_placeID]
+        # sorted_results = calculate_weighted_scores(filtered_points, (25.0375, 121.5637), weights)
 
-    # print("排序結果:")
-    # for result in sorted_results:
-    #     pprint(result, sort_dicts=False)
-    
+        # print("排序結果:")
+        # for result in sorted_results:
+        #     pprint(result, sort_dicts=False)
+        
