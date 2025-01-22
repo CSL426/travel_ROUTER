@@ -132,6 +132,24 @@ def handle_message(event):
 
         # 回覆 Flex 訊息
         line_bot_api.reply_message(event.reply_token, flex_message)
+    
+    elif text_message == "不要":
+        """
+        存取步數到mongodb到mongodb
+        """
+        step = data[-1]['step']
+        # mongo.insertOne(step)
+        pass
+
+    elif text_message == "不要":
+        '''
+        回傳不要的選項
+        '''
+        user_Q = '不要xxx'
+        user = data['name']     
+        step = data[i]['step']
+
+        pass
 
     elif text_message == "情境搜索":
         # 呼叫 Vibe 函數來生成情境搜索的資料
