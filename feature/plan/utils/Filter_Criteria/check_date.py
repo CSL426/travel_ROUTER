@@ -2,22 +2,22 @@ def filter_by_weekday(restaurants, weekday):
     """
     根據指定的星期篩選餐廳。
     
-    :restaurants: 餐廳列表，包含 place_id 和 schedule。珣的那包
+    :restaurants: 餐廳列表，包含 placeID 和 schedule。珣的那包
     :weekday: 使用者提供的星期 (1=週一, 2=週二, ..., 7=週日)。pon那包
-    :return: 符合條件的 place_id 列表。
+    :return: 符合條件的 placeID 列表。
     """
-    fliter_place_id = []
+    fliter_placeID = []
     for restaurant in restaurants:
         hours = restaurant.get("hours", {})
         if weekday in hours and hours[weekday] != 'none':
-            fliter_place_id.append(restaurant['place_id'])
-    return fliter_place_id
+            fliter_placeID.append(restaurant['placeID'])
+    return fliter_placeID
 
 if __name__ == "__main__":
     # 測試數據
     restaurants = [
         {
-            "place_id": 1,
+            "placeID": 1,
             "hours": {
                 1: 'none',
                 2: [{'start': '09:00', 'end': '21:00'}],
@@ -29,7 +29,7 @@ if __name__ == "__main__":
             }
         },
         {
-            "place_id": 2,
+            "placeID": 2,
             "hours": {
                 1: 'none',
                 2: [{'start': '10:00', 'end': '20:00'}],
@@ -41,7 +41,7 @@ if __name__ == "__main__":
             }
         },
         {
-            "place_id": 3,
+            "placeID": 3,
             "hours": {
                 1: 'none',
                 2: 'none',
@@ -70,7 +70,7 @@ if __name__ == "__main__":
 
     # 篩選結果
     open_restaurants = filter_by_weekday(restaurants, user_weekday)
-    place_id = open_restaurants
+    placeID = open_restaurants
     
-    # 輸出符合條件的 place_id
-    print("有營業的餐廳 place_id:", place_id)
+    # 輸出符合條件的 placeID
+    print("有營業的餐廳 placeID:", placeID)
