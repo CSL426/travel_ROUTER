@@ -28,7 +28,7 @@ def thinking(data):
     url = {
         "type": "uri",  # 連結類型
         "label": "WEBSITE",  # 按鈕顯示標籤
-        "uri": "地址的地圖"  # 默認地圖鏈接，稍後會替換為實際的URL
+        "uri": "https://www.google.com/maps"  # 默認地圖鏈接，稍後會替換為實際的URL
     }
 
     # 定義地址顯示樣式
@@ -46,24 +46,19 @@ def thinking(data):
 
     # 迭代資料中的每個店鋪資料
     for point in data[0].values():
-        print(point)
-        # 定義店鋪名稱顯示
+
+         # 深拷貝避免相互影響
         temp_loc = location.copy()
-        temp_loc['text'] = point["name"]  # 將店鋪名稱替換為當前店鋪的名稱
-
-        # 定義地址顯示
         temp_add = address.copy()
-        temp_add['text'] = point["address"]  # 將地址替換為當前店鋪的地址
-        
-        # 定義評分顯示
         temp_rat = rating.copy()
-        temp_rat["text"] = str(point["rating"])  # 將評分數字轉換為字符串，顯示在界面上
-
-        # 定義URL按鈕顯示
         temp_url = url.copy()
-        # temp_url["uri"] = point["url"]  # 將URL替換為當前店鋪的網址
-        temp_url["uri"] = 'https://example.com'
 
+        # 安全地設置值，確保所有必要的字段都存在
+        temp_loc['text'] = point.get("name", "地點")
+        temp_add['text'] = point.get("address", "地址")
+        temp_rat["text"] = str(point.get("rating", "0.0"))
+        temp_url["uri"] = point.get("url", "https://www.google.com/maps")
+        
         # 拼接每個店鋪的Bubble格式資料
         bubble = {
             "type": "bubble",  # 顯示為Bubble

@@ -31,11 +31,11 @@ class LLM_Manager:
         content = response['choices'][0]['message']['content'].strip()
         # 根據format不同進行處理
         if format == "list":
-            return ast.literal_eval(content)
+            return json.loads(content)
         elif format == "List[Dict]":
-            return [ast.literal_eval(content)]  # 返回字典列表格式
+            return [json.loads(content)]  # 返回字典列表格式
         elif format == "List[5 x Dict]":
-            return ast.literal_eval(content)
+            return json.loads(content)
 
     def Thinking_fun(self, user_input):
         # 使用 ThreadPoolExecutor 來並行處理 API 請求
