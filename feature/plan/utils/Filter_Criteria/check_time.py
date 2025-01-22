@@ -13,9 +13,9 @@ def is_time_in_range(start, end, arrival_time):
 def filter_by_time_without_weekday(restaurants, arrival_time):
     """
     根據到達時間篩選營業中的餐廳，忽略星期篩選。
-    :param restaurants: 餐廳列表，包含 place_id 和 schedule。
+    :param restaurants: 餐廳列表，包含 placeID 和 schedule。
     :param arrival_time: 使用者的到達時間 (格式: 'HH:MM')。
-    :return: 符合條件的 place_id 列表。
+    :return: 符合條件的 placeID 列表。
     """
     open_at_time = []
     for restaurant in restaurants:
@@ -24,7 +24,7 @@ def filter_by_time_without_weekday(restaurants, arrival_time):
             if time_ranges == 'none':  # 當日無營業時間，跳過
                 continue
             if any(is_time_in_range(time_range['start'], time_range['end'], arrival_time) for time_range in time_ranges):
-                open_at_time.append(restaurant['place_id'])
+                open_at_time.append(restaurant['placeID'])
                 break  # 跳出日期迴圈
     return open_at_time
 
@@ -33,7 +33,7 @@ if __name__ == "__main__":
     # 測試數據
     restaurants = [
         {
-            "place_id": 1,
+            "placeID": 1,
             "hours": {
                 1: 'none',
                 2: [{'start': '09:00', 'end': '21:00'}],
@@ -45,7 +45,7 @@ if __name__ == "__main__":
             }
         },
         {
-            "place_id": 2,
+            "placeID": 2,
             "hours": {
                 1: 'none',
                 2: [{'start': '10:00', 'end': '20:00'}],
@@ -57,7 +57,7 @@ if __name__ == "__main__":
             }
         },
         {
-            "place_id": 3,
+            "placeID": 3,
             "hours": {
                 1: 'none',
                 2: 'none',
@@ -87,7 +87,7 @@ if __name__ == "__main__":
 
     # 篩選符合條件的餐廳
     open_restaurants = filter_by_time_without_weekday(restaurants, user_arrival_time)
-    place_id = open_restaurants
+    placeID = open_restaurants
 
     # 輸出結果
-    print("符合 16:00 營業的餐廳 place_id:", place_id)
+    print("符合 16:00 營業的餐廳 placeID:", placeID)
