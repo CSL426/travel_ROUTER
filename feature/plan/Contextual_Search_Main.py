@@ -120,6 +120,7 @@ def filter_and_calculate_scores(points, user_requirements, weights):
 
 if __name__ == "__main__":
     from pprint import pprint
+
     # 測試數據
     points = [
     {
@@ -225,6 +226,7 @@ if __name__ == "__main__":
             "交通類別": "步行",
         }
     ]
+
 
     weights = {'distance': 0.2, 'comments': 0.4, 'similarity': 0.4}
 
