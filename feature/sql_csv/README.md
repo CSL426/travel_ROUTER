@@ -1,49 +1,25 @@
-# utils
-> `placeID_list = [placeID1, placeID2, ....]`
-> placeID_list 經過篩選後 縮小程較少的 placeID_list 再繼續傳遞
-* ETL_dataframe = ETL_dataframe() ; 將 placeID 設成 index 的pandas dataframe
+# sql_csv.py 用法
+points = pandas_search(  
+                    system: 'plan'|'trip',
+                    system_input: 向量搜索端 input , 
+                    special_request_list: [],   //  指定 [] 的化判定不篩選特殊要求
+                ) : 
+> 1. 指定 系統
+> 2. 進入 plan_system | trip_system
+>       * 使用 data_pipeline/filter_pipeline 篩選
+>       * 使用 point_maker/point_make 形成單個 point 最後輸出 points
+> 3. return points
 
-* placeID_list = classify_restaurant_or_view(  placeID_list,
-                                                restaurant_view_classify: 'restaurant'|'view',
-                                                ETL_dataframe,
-                                                )   ; 餐廳景點篩選  
-* placeID_list = special_request(   placeID_list, 
-                                    request_list: list[dict],
-                                    ETL_dataframe, 
-                                    )   ; 特殊需求篩選
-
-* point = make_point(placeID, system: "trip"|"plan")    ; 製作 <旅遊推薦|情境搜索> 端要的 point
 
 ---
 
-<!-- # 功能主函式
-1. sql_pipeline.py 用法
-```
-class SqlPlacePipeline:
-    def __init__(self, placeID_list):
-        self.placeID_list = placeID_list
-
-    def apply_classification(self, classify: 'restaurant'|'view'):  
-    # 應用分類篩選（餐廳或景點）
-
-    def apply_special_requests(self, request_list):
-    # 應用特殊需求篩選
-
-    def get_results(self):
-    # 返回結果 placeID_list
-```
-> 連結 篩選function 可以選擇: 要篩餐廳景點 or 要篩特殊需求 -->
-
-
-1. sql.py 用法
-points = pandas_search(  
-                    system: str,
-                    system_input: list|dict, 
-                    special_request_list: list[dict] = [],
-                ) : 
-> 1. load 進 input
-> 2. 轉成 placeID_list
-> 3. 呼叫 SqlPlacePipeline
-> 4. points = placeID_list 迴圈 <透過 make_point 形承單個 point 加總>
-> 5. return points
-
+# core/ 
+- data_pipeline/ 
+    - 主要控制 placeID_list 的篩選
+- point_maker/
+    - 主要控制 將 placeID 轉成 point 格式
+- plan_system.py, trip_system.py
+    - 主要控制 
+        data_pipeline 篩選
+        point_maker 轉換成 point
+        收集 point 形成最終 point 格式

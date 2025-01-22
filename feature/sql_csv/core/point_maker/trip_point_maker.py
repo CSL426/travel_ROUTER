@@ -38,7 +38,7 @@ def trip_point_make(place_ID: str, period: str, ETL_dataframe):
                 'label' : filter_series['label'],                              # 小分類
                 'hours' : ast.literal_eval(filter_series['hours']),
                 'period': period, 
-                'url' : filter_series['Location_URL']         # googlemap url 
+                'url' : filter_series['location_url']         # googlemap url 
             }
     return point
     

@@ -51,8 +51,8 @@ def plan_point_make(place_ID: str, retrival_score: float, ETL_dataframe):
                 'new_label_type': filter_series['new_label_type'],
                 'hours': ast.literal_eval(filter_series['hours']),      # 字串 hours 格式 轉 dict 格式輸出
                 'new_avg_cost': int(filter_series['new_avg_cost']),
-                'Location_URL': filter_series['Location_URL'],
-                '圖片URL': filter_series['圖片URL']
+                'location_url': filter_series['location_url'],
+                'image_url': filter_series['image_url']
             }
 
 
