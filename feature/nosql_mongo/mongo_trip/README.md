@@ -6,22 +6,22 @@ feature/nosql_mongo/mongo_trip
   ├── mongodb_manager.py  - 資料庫連線管理(singleton)
   ├── mongodb_handler.py  - CRUD操作實作
   ├── db_helper.py       - 簡單存取介面
-  └── __init__.py        - 匯出db_trip實例
+  └── __init__.py        - 匯出trip_db實例
 ```
 
 ## 基本使用
 ```python
 # 在需要使用資料庫的地方
-from feature.nosql import db_trip
+from feature.nosql import trip_db
 
 # 記錄用戶輸入
-db_trip.record_user_input(
+trip_db.record_user_input(
     line_id="USER_LINE_ID",
     input_text="用戶說的話"
 )
 
 # 儲存規劃結果
-db_trip.save_plan(
+trip_db.save_plan(
     line_id="USER_LINE_ID",
     input_text="觸發規劃的輸入",
     requirement={
@@ -40,10 +40,10 @@ db_trip.save_plan(
 )
 
 # 取得歷史記錄
-history = db_trip.get_input_history("USER_LINE_ID")
+history = trip_db.get_input_history("USER_LINE_ID")
 
 # 取得最新規劃
-latest_plan = db_trip.get_latest_plan("USER_LINE_ID")
+latest_plan = trip_db.get_latest_plan("USER_LINE_ID")
 ```
 
 ## 資料結構
@@ -90,14 +90,14 @@ latest_plan = db_trip.get_latest_plan("USER_LINE_ID")
 
 ### 1. 記錄用戶輸入
 ```python
-db_trip.record_user_input(line_id, input_text)
+trip_db.record_user_input(line_id, input_text)
 ```
 - 每次用戶傳訊息時呼叫
 - 自動記錄時間戳記
 
 ### 2. 儲存規劃
 ```python
-plan_index = db_trip.save_plan(
+plan_index = trip_db.save_plan(
     line_id,
     input_text,
     requirement,
@@ -110,7 +110,7 @@ plan_index = db_trip.save_plan(
 
 ### 3. 取得輸入歷史
 ```python
-history = db_trip.get_input_history(line_id)
+history = trip_db.get_input_history(line_id)
 ```
 - 回傳用戶所有輸入記錄
 - 依時間排序
@@ -118,21 +118,21 @@ history = db_trip.get_input_history(line_id)
 ### 4. 取得規劃記錄
 ```python
 # 最新規劃
-latest = db_trip.get_latest_plan(line_id)
+latest = trip_db.get_latest_plan(line_id)
 
 # 指定規劃
-plan = db_trip.get_plan_by_index(line_id, plan_index)
+plan = trip_db.get_plan_by_index(line_id, plan_index)
 ```
 
 ### 5. 清除資料(測試用)
 ```python
-db_trip.clear_user_data(line_id)
+trip_db.clear_user_data(line_id)
 ```
 - 清除該用戶的所有資料
 - 包含輸入歷史和規劃記錄
 
 ## 注意事項
-1. 不需要手動初始化db_trip
+1. 不需要手動初始化trip_db
 2. line_id來自Line事件的user_id
 3. 所有時間都用UTC儲存
 4. 異常會記錄到log

@@ -3,9 +3,9 @@ from dotenv import load_dotenv
 from typing import Dict, List, Tuple
 from concurrent.futures import ThreadPoolExecutor
 
-from feature.llm.LLM import LLM_Manager
+from feature.llm import LLM_Manager
 from feature.retrieval import qdrant_search
-from feature.sql import csv_read
+from feature.sql_csv import pandas_search
 from feature.nosql_mongo import trip_db
 from feature.trip import TripPlanningSystem
 
@@ -32,9 +32,6 @@ class TripController:
         self,
         input_text: str,
         line_id: str = None,
-        previous_trip: List[Dict] = None,
-        restart_index: int = None,
-
     ) -> List[Dict]:
         """
         處理輸入訊息並返回結果
@@ -42,8 +39,6 @@ class TripController:
         Args:
             input_text: 使用者輸入文字
             line_id: user's line id (選填)
-            previous_trip: 之前的行程(選填)
-            restart_index: 從哪個點重新開始(選填)
 
         Returns:
             str: 規劃好的行程或錯誤訊息
@@ -58,12 +53,16 @@ class TripController:
                 input_text=input_text
             )
 
+            # 需要時再取得之前的行程
+            latest = trip_db.get_latest_plan(line_id=line_id)
+            latest_itinerary = latest.get('itinerary') if latest else None
+
             # 2. 取得歷史記錄給LLM
             history = trip_db.get_input_history(line_id)
             history_text = format_history_for_llm(history)
 
             # 3. LLM意圖分析
-            period_describe, unique_requirement, base_requirement = (
+            period_describe, unique_requirement, base_requirement, restart_index = (
                 self._analyze_intent(text=history_text)
             )
 
@@ -77,7 +76,7 @@ class TripController:
             result = self._plan_trip(
                 location_details=location_details,
                 base_requirement=base_requirement,
-                previous_trip=previous_trip,
+                previous_trip=latest_itinerary,
                 restart_index=restart_index,
             )
 
@@ -99,7 +98,7 @@ class TripController:
         text: str,
         requirement: List[Dict] = None,
         previous_trip: List[Dict] = None,
-    ) -> Tuple[List[Dict], List[Dict], List[Dict]]:
+    ) -> Tuple[List[Dict], List[Dict], List[Dict], List[int]]:
         """
         分析使用者意圖
 
@@ -192,9 +191,10 @@ class TripController:
         """
         unique_requirement = [{'無障礙': False}]
 
-        return csv_read.pandas_search(
-            condition_data=placeIDs,
-            detail_info=unique_requirement
+        return pandas_search(
+            system='trip',
+            system_input=placeIDs,
+            special_request_list=unique_requirement,
         )
 
     def _plan_trip(

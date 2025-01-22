@@ -1,11 +1,11 @@
 # src/core/models/place.py
 
-from typing import List, Dict, Optional, Union
-from pydantic import BaseModel, Field, field_validator
+from typing import Any, List, Dict, Optional, Union
+from pydantic import BaseModel, Field, field_validator, model_validator
 from datetime import datetime
 
 from ..services.time_service import TimeService
-from ..utils.validator import TripValidator
+from ..utils.validator import TripValidator, ValidationError
 
 
 class PlaceDetail(BaseModel):
@@ -65,7 +65,7 @@ class PlaceDetail(BaseModel):
         examples=["morning", "lunch", "afternoon", "dinner", "night"]
     )
 
-    hours: Dict[int, List[Optional[Dict[str, str]]]] = Field(
+    hours: Dict[int, Optional[Any]] = Field(
         description="""營業時間資訊，格式：
         {
             1: [{'start': '09:00', 'end': '17:00'}],  # 週一
@@ -78,7 +78,7 @@ class PlaceDetail(BaseModel):
         - 支援跨日營業時間(例如夜市)
         """
     )
-    
+
     url: Optional[str] = Field(
         default=None,
         description="地點的導航連結",
@@ -136,15 +136,59 @@ class PlaceDetail(BaseModel):
             raise ValueError(f'無效的時段標記: {v}')
         return v
 
-    @field_validator('hours')
-    def validate_hours(cls, v: Dict) -> Dict:
-        """驗證營業時間格式"""
-        try:
-            # 使用新的驗證器
-            TripValidator.validate_business_hours(v)
-            return v
-        except ValueError as e:
-            raise ValueError(f"營業時間格式錯誤: {str(e)}")
+    # @field_validator('hours')
+    @model_validator(mode='before')
+    def validate_hours(cls, values: Dict) -> Dict:
+        """前處理驗證
+
+        特殊規則:
+        1. 如果hours完全沒有資料 -> 全部24小時營業
+        2. 如果1-7都是None或'none' -> 全部24小時營業  
+        3. 如果部分天數有資料 -> 沒設定的視為休息(None)
+        """
+        if 'hours' not in values:
+            values['hours'] = {i: [{'start': '00:00', 'end': '23:59'}]
+                               for i in range(1, 8)}
+            return values
+
+        hours = values['hours']
+
+        # 檢查是否全部都是None或'none'
+        all_closed = True
+        for day in range(1, 8):
+            value = hours.get(day)
+            if value not in [None, 'none', []]:
+                all_closed = False
+                break
+
+        if all_closed:
+            # 全部都是None -> 改成24小時
+            values['hours'] = {i: [{'start': '00:00', 'end': '23:59'}]
+                               for i in range(1, 8)}
+            return values
+        
+        # 處理每一天
+        processed = {}
+        for day in range(1, 8):
+            if day not in hours:
+                processed[day] = None
+                continue
+
+            value = hours[day]
+            if value in [None, 'none', []]:
+                processed[day] = None
+            else:
+                if not isinstance(value, list):
+                    value = [value]
+                value = [
+                    slot if isinstance(slot, dict) else {
+                        'start': slot['start'], 'end': slot['end']}
+                    for slot in value
+                ]
+                processed[day] = value
+
+        values['hours'] = processed
+        return values
 
     @field_validator('lat', 'lon')
     def validate_coordinates(cls, v: float, field: str) -> float:
@@ -168,7 +212,7 @@ class PlaceDetail(BaseModel):
         Returns:
             float: 兩點間距離(公里)
 
-        使用範例:
+        Examlpes:
             >>> place1 = PlaceDetail(...)
             >>> place2 = PlaceDetail(...)
             >>> distance = place1.calculate_distance(place2)

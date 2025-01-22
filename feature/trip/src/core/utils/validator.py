@@ -26,6 +26,11 @@ class TripValidator:
     TIME_PATTERN = r'^([01][0-9]|2[0-3]):[0-5][0-9]$'
     DATE_PATTERN = r'^(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$'
 
+    def __init__(self, message: str, field: str = None):
+        self.message = message
+        self.field = field
+        super().__init__(self.message)
+
     @classmethod
     def validate_coordinates(cls, lat: float, lon: float) -> bool:
         """驗證座標是否在有效範圍內
@@ -191,18 +196,8 @@ class TripValidator:
                     7: [{'start': '09:00', 'end': '17:00'}]   # 週日
                 }
                 - 支援多時段營業(陣列)
-                - None 表示該日店休
+                - None/'none' 表示該日店休
                 - 支援跨日營業時間
-
-        異常:
-            ValidationError: 格式錯誤或時間無效
-
-        使用範例:
-            >>> hours = {
-                    1: [{'start': '09:00', 'end': '17:00'}],
-                    2: [{'start': '09:00', 'end': '17:00'}]
-                }
-            >>> TripValidator.validate_business_hours(hours)
         """
         # 檢查每天的營業時間
         for day, slots in hours.items():
@@ -210,8 +205,8 @@ class TripValidator:
             if not isinstance(day, int) or day < 1 or day > 7:
                 raise ValidationError(f"無效的星期格式：{day}", "business_hours")
 
-            # 允許 None 值表示店休
-            if slots is None:
+            # 允許 None 或 'none' 表示店休
+            if slots is None or slots == 'none':
                 continue
 
             # 必須是時段列表
@@ -467,13 +462,14 @@ class TripValidator:
 
         return formatted
 
+
 class TimeCalculator:
     # 停留時間對照表
     DEFAULT_DURATIONS = {
         # 正餐餐廳 (90分鐘)
         '中菜館': 90,
         '壽司店': 90,
-        # 快速餐飲 (45分鐘) 
+        # 快速餐飲 (45分鐘)
         '快餐店': 45,
         '麵店': 45,
         # 景點 (120分鐘)
@@ -483,13 +479,13 @@ class TimeCalculator:
         'default': 60
     }
 
-    @classmethod 
+    @classmethod
     def get_default_duration(cls, label: str) -> int:
         """計算預設停留時間
-        
+
         Args:
             label (str): 地點類型標籤
-            
+
         Returns:
             int: 建議停留時間(分鐘)
         """

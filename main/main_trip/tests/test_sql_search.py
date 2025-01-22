@@ -30,3 +30,7 @@ def test_pandas_search():
         assert isinstance(result_1, (list, dict))
     if len(result_2) > 0:
         assert isinstance(result_2, (list, dict))
+
+
+if __name__ == "__main__":
+    pytest.main(["-v", "-s", __file__])

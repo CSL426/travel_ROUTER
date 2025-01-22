@@ -69,7 +69,11 @@ class TripPlanningSystem:
             requirement = self._convert_keys(requirement)
 
             # 如果要從中間開始規劃
-            if previous_trip and restart_index is not None:
+            if (previous_trip and
+                restart_index is not None and 
+                restart_index > 0 and
+                restart_index <= len(previous_trip)):
+                
                 # 取得之前行程的最後一個點
                 restart_point = previous_trip[restart_index-1]
                 # 修改開始時間

@@ -84,7 +84,18 @@ class TripDBHandler:
                 "timestamp": datetime.now(UTC),
                 "input_text": input_text,
                 "requirement": requirement,
-                "itinerary": itinerary
+                "itinerary": [{
+                    "step": item["step"],
+                    "name": item["name"],
+                    "label": item["label"],
+                    "lat": item["lat"],
+                    "lon": item["lon"],
+                    "period": item["period"],
+                    "start_time": item["start_time"],
+                    "end_time": item["end_time"]
+                }
+                    for item in itinerary
+                ]
             }
 
             self.db.planner_records.insert_one(record)
