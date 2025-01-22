@@ -15,37 +15,36 @@ def load_extracted_data(emotion_analysis_path):
     return extracted_data
 
 
-
-def normalize_and_match(restaurants, extracted_data):
+def normalize_and_match(points, extracted_data):
     """
-    僅將 restaurants 中的 place_id 參與標準化，並匹配結果。
+    僅將 points 中的 place_id 參與標準化，並匹配結果。
     
-    :param restaurants: List[Dict]，包含 place_id 的餐廳列表。
+    :param points: List[Dict]，包含 place_id 的資料列表。
     :param extracted_data: List[Dict]，包含 place_id 和 總體評價 的數據。
     :return: DataFrame，包含匹配結果和標準化評價。
     """
     # 將 extracted_data 轉為 DataFrame
     extracted_df = pd.DataFrame(extracted_data)
 
-    # 將 restaurants 轉為 DataFrame
-    restaurants_df = pd.DataFrame(restaurants)
+    # 將 points 轉為 DataFrame
+    points_df = pd.DataFrame(points)
 
-    # 只保留 restaurants 中有的 place_id
-    place_ids_in_restaurants = restaurants_df["place_id"].unique()
-    filtered_extracted_df = extracted_df[extracted_df["place_id"].isin(place_ids_in_restaurants)]
+    # 只保留 points 中有的 place_id
+    place_ids_in_points = points_df["place_id"].unique()
+    filtered_extracted_df = extracted_df[extracted_df["place_id"].isin(place_ids_in_points)]
 
     # 對 "總體評價" 欄位進行標準化
     if "總體評價" in filtered_extracted_df.columns:
         filtered_extracted_df["comment_score_normalized"] = (
             (filtered_extracted_df["總體評價"] - filtered_extracted_df["總體評價"].min()) /
             (filtered_extracted_df["總體評價"].max() - filtered_extracted_df["總體評價"].min())
-        )*100
-    
-    # 四捨五入到小數點後兩位
+        ) * 100
+
+        # 四捨五入到小數點後兩位
         filtered_extracted_df["comment_score_normalized"] = filtered_extracted_df["comment_score_normalized"].round(2)
 
     # 合併兩個 DataFrame，根據 place_id 匹配
-    merged_df = pd.merge(restaurants_df, filtered_extracted_df, on="place_id", how="left")
+    merged_df = pd.merge(points_df, filtered_extracted_df, on="place_id", how="left")
 
     return merged_df
 
@@ -58,7 +57,7 @@ if __name__ == "__main__":
     extracted_data = load_extracted_data(emotion_analysis_path)
 
     # 測試數據
-    restaurants = [
+    points = [
         {'place_id': 'ChIJ---TJYypQjQRNipOm6saF74'}, #7.50
         {'place_id': 'ChIJ---TJYypQjQRNipOm6saF74'}, #7.50 
         {'place_id': 'ChIJ--FASY2sQjQR-zzjANSErLk'}, #4.50
@@ -75,7 +74,7 @@ if __name__ == "__main__":
     ]
 
     # 執行標準化並匹配
-    result_df = normalize_and_match(restaurants,extracted_data)
+    result_df = normalize_and_match(points, extracted_data)
 
     # 打印結果
     print("合併並標準化的結果:")
