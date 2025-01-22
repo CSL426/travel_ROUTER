@@ -5,6 +5,7 @@ def plan_point_make(place_ID: str, retrival_score: float, ETL_dataframe):
     ```
     Args:
         place_ID : 單個 place_ID
+        retrival_score : 向量搜尋相似度分數
         ETL_dataframe : ETL csv dataframe
     return :
         point : 給 情境搜尋端 的單個point格式
@@ -42,7 +43,7 @@ def plan_point_make(place_ID: str, retrival_score: float, ETL_dataframe):
     point = {
                 'placeID': place_ID,
                 'place_name': filter_series['place_name'],
-                'rating': int(filter_series['rating']),
+                'rating': float(filter_series['rating']),
                 'retrival_score': float(retrival_score),
                 'comments': int(filter_series['comments']),
                 'lat': float(filter_series['lat']),
@@ -68,9 +69,9 @@ if __name__ == '__main__':
     retrival_score = 0.7
 
     point = plan_point_make(
-        place_ID= place_ID,
-        retrival_score= retrival_score,
-        ETL_dataframe= ETL_dataframe,
-    )
+                place_ID= place_ID,
+                retrival_score= retrival_score,
+                ETL_dataframe= ETL_dataframe,
+            )
 
     pprint(point, sort_dicts=False)
