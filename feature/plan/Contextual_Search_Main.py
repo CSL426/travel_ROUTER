@@ -44,7 +44,7 @@ def main(points, user_requirements):
     if user_weekday != "none":
         matching_placeID.intersection_update(filter_by_weekday(points, user_weekday))
 
-    user_arrival_time = user_filters.get("hours")
+    user_arrival_time = user_filters.get("時間")
     if user_arrival_time != "none":
         matching_placeID.intersection_update(filter_by_time_without_weekday(points, user_arrival_time))
 
@@ -88,6 +88,34 @@ def calculate_weighted_scores(points, user_location, weights):
     
     return filtered_points
 
+def filter_and_calculate_scores(points, user_requirements, weights):
+    """
+    篩選地點並計算加權總分。
+    
+    :param points: 地點資料列表。
+    :param user_requirements: 使用者需求列表。
+    :param weights: 權重字典，包含距離、評論分數、相似性。
+    :return: 排序後的前 10 地點列表（僅包含指定欄位）。
+    """
+    # 篩選符合條件的 placeID
+    filtered_placeID = main(points, user_requirements)
+
+    # 從原始資料中篩選符合條件的地點
+    filtered_points = [point for point in points if point['placeID'] in filtered_placeID]
+
+    # 檢查篩選結果是否為空
+    if not filtered_points:
+        print("No places match the given criteria.")
+        return []
+
+    # 計算加權總分並排序
+    user_location = user_requirements[0].get("出發地", (25.0418, 121.5654))  # 預設台北車站
+    if user_location == "none":
+        user_location = (25.0418, 121.5654)
+
+    sorted_points = calculate_weighted_scores(filtered_points, user_location, weights)
+    
+    return sorted_points
 
 
 if __name__ == "__main__":
@@ -198,13 +226,20 @@ if __name__ == "__main__":
             "交通類別": "步行",
         }
     ]
+
+
     weights = {'distance': 0.2, 'comments': 0.4, 'similarity': 0.4}
 
-    filtered_placeID = main(points, user_requirements)
-    filtered_points = [point for point in points if point['placeID'] in filtered_placeID]
-    sorted_results = calculate_weighted_scores(filtered_points, (25.0375, 121.5637), weights)
+    results = filter_and_calculate_scores(points, user_requirements, weights)
+    print("Filtered and Sorted Results:")
+    for result in results:
+        pprint(result,sort_dicts=False) 
 
-    print("排序結果:")
-    for result in sorted_results:
-        pprint(result, sort_dicts=False)
-    
+        # filtered_placeID = main(points, user_requirements)
+        # filtered_points = [point for point in points if point['placeID'] in filtered_placeID]
+        # sorted_results = calculate_weighted_scores(filtered_points, (25.0375, 121.5637), weights)
+
+        # print("排序結果:")
+        # for result in sorted_results:
+        #     pprint(result, sort_dicts=False)
+        
