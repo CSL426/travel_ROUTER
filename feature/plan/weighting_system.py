@@ -1,6 +1,6 @@
-from feature.plan.utils.標準化.相似性標準化point import normalize_similarity
-from feature.plan.utils.標準化.總評論標準化point import normalize_and_match, load_extracted_data
-from feature.plan.utils.標準化.距離的反向標準化point import calculate_reverse_normalized_distances_no_threshold
+from feature.plan.utils.Norma_lization.similarity_score_normalized import normalize_similarity
+from feature.plan.utils.Norma_lization.comment_score_normalized import normalize_and_match, load_extracted_data
+from feature.plan.utils.Norma_lization.distances_score_normalized import calculate_reverse_normalized_distances_no_threshold
 
 def calculate_weighted_scores(points, user_location, weights):
     """
