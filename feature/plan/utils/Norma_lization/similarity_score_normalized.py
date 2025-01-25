@@ -2,7 +2,7 @@ def normalize_similarity(points):
     """
     對相似性分數進行標準化。
     
-    :points: 資料列表，每個地點包含 place_id 和 相似性。
+    :points: 資料列表，每個地點包含 placeID 和 相似性。
     被篩選出的那一包
     :return: 包含標準化相似性的資料列表。
     """
@@ -24,16 +24,16 @@ def normalize_similarity(points):
 if __name__ == "__main__":
     # 原始資料
     points = [
-        {'place_id': 1, 'retrival_score': 0.83},
-        {'place_id': 2, 'retrival_score': 0.91},
-        {'place_id': 3, 'retrival_score': 0.75},
-        {'place_id': 4, 'retrival_score': 0.68},
-        {'place_id': 5, 'retrival_score': 0.94},
-        {'place_id': 6, 'retrival_score': 0.88},
-        {'place_id': 7, 'retrival_score': 0.73},
-        {'place_id': 8, 'retrival_score': 0.95},
-        {'place_id': 9, 'retrival_score': 0.61},
-        {'place_id': 10, 'retrival_score': 0.79}
+        {'placeID': 1, 'retrival_score': 0.83},
+        {'placeID': 2, 'retrival_score': 0.91},
+        {'placeID': 3, 'retrival_score': 0.75},
+        {'placeID': 4, 'retrival_score': 0.68},
+        {'placeID': 5, 'retrival_score': 0.94},
+        {'placeID': 6, 'retrival_score': 0.88},
+        {'placeID': 7, 'retrival_score': 0.73},
+        {'placeID': 8, 'retrival_score': 0.95},
+        {'placeID': 9, 'retrival_score': 0.61},
+        {'placeID': 10, 'retrival_score': 0.79}
     ]
 
     # 標準化處理

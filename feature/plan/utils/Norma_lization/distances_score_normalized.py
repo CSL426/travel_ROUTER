@@ -4,9 +4,9 @@ def calculate_reverse_normalized_distances_no_threshold(points, user_location):
     """
     計算距離的反向標準化分數。
     
-    :points: 資料列表，每個地點包含 place_id 和經緯度。
+    :points: 資料列表，每個地點包含 placeID 和經緯度。
     :param user_location: 使用者出發地 (lat, lon)。
-    :return: 包含 place_id 和反向標準化距離分數的列表。
+    :return: 包含 placeID 和反向標準化距離分數的列表。
     """
     results = []
     for point in points:
@@ -16,7 +16,7 @@ def calculate_reverse_normalized_distances_no_threshold(points, user_location):
         # 反向標準化分數計算（距離越大分數越低，距離越小分數越高）
         normalized_score = round((1 / (1 + distance)) * 100, 2)  # 反向標準化公式
         results.append({
-            "place_id": point['place_id'],
+            "placeID": point['placeID'],
             "distance_km": round(distance, 2),  # 距離保留兩位小數
             "distance_normalized_score": normalized_score  # 分數保留兩位小數
         })
@@ -26,17 +26,17 @@ def calculate_reverse_normalized_distances_no_threshold(points, user_location):
 if __name__ == "__main__":
     # 測試數據
     points = [
-        {'place_id': 1, 'lon': 121.5171, 'lat': 25.0478},
-        {'place_id': 2, 'lon': 121.5314, 'lat': 25.0645},
-        {'place_id': 3, 'lon': 121.5078, 'lat': 25.0339},
-        {'place_id': 4, 'lon': 121.5289, 'lat': 25.0356},
-        {'place_id': 5, 'lon': 121.4952, 'lat': 25.0213},
-        {'place_id': 6, 'lon': 121.5501, 'lat': 25.0483},
-        {'place_id': 7, 'lon': 121.5156, 'lat': 25.0612},
-        {'place_id': 8, 'lon': 121.5082, 'lat': 25.0653},
-        {'place_id': 9, 'lon': 121.5427, 'lat': 25.0296},
-        {'place_id': 10, 'lon': 121.5209, 'lat': 25.0501},
-        {'place_id': 11, 'lon': 121.4935, 'lat': 25.0462}
+        {'placeID': 1, 'lon': 121.5171, 'lat': 25.0478},
+        {'placeID': 2, 'lon': 121.5314, 'lat': 25.0645},
+        {'placeID': 3, 'lon': 121.5078, 'lat': 25.0339},
+        {'placeID': 4, 'lon': 121.5289, 'lat': 25.0356},
+        {'placeID': 5, 'lon': 121.4952, 'lat': 25.0213},
+        {'placeID': 6, 'lon': 121.5501, 'lat': 25.0483},
+        {'placeID': 7, 'lon': 121.5156, 'lat': 25.0612},
+        {'placeID': 8, 'lon': 121.5082, 'lat': 25.0653},
+        {'placeID': 9, 'lon': 121.5427, 'lat': 25.0296},
+        {'placeID': 10, 'lon': 121.5209, 'lat': 25.0501},
+        {'placeID': 11, 'lon': 121.4935, 'lat': 25.0462}
     ]
 
     user_requirements = [
