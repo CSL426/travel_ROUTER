@@ -1,3 +1,6 @@
-from .controller import TripController
+from .controller import TripController, init_config
 
-__all__ = ['TripController']
+__all__ = [
+    'TripController',
+    'init_config'
+]

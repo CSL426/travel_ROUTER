@@ -2,6 +2,7 @@
 
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
+from math import ceil
 import random
 from typing import List, Dict, Optional, Tuple
 from ..models.place import PlaceDetail
@@ -13,7 +14,7 @@ from ..evaluator.place_scoring import PlaceScoring
 class BasePlanningStrategy:
     """行程規劃策略基礎類別
 
-    此類別負責：
+    此類別負責:
     1. 管理時段狀態與轉換
     2. 選擇適合的下一個地點
     3. 建立完整行程規劃
@@ -166,12 +167,21 @@ class BasePlanningStrategy:
         # 重置時間服務狀態
         self.time_service.reset()
         self.visited_places.clear()
-        
+
         # 如果有之前的行程 先加入
         if previous_trip:
             self._itinerary.extend(previous_trip)
             # 把之前的地點加入已訪問集合
             self.visited_places.update(item['name'] for item in previous_trip)
+
+            # 檢查並設定時段狀態
+            for item in previous_trip:
+                if item['period'] == 'lunch':
+                    self.time_service.lunch_completed = True
+                    self.time_service.current_period = 'afternoon'
+                elif item['period'] == 'dinner':
+                    self.time_service.lunch_completed = True
+                    self.time_service.current_period = 'night'
 
         # 加入起點(如果不是繼續規劃)
         if not previous_trip:
@@ -263,7 +273,7 @@ class BasePlanningStrategy:
                 visit_time,
                 final_travel_info['duration_minutes']
             )
-            
+
             # 根據實際抵達時間更新終點的period
             self.end_location.period = self.time_service.get_time_period(
                 final_arrival_time
@@ -345,9 +355,22 @@ class BasePlanningStrategy:
                 duration: int - 在該地點的停留時間，以分鐘為單位
                 travel_time: int - 到達該地點所需的交通時間，以分鐘為單位
                 travel_distance: float - 到達該地點的交通距離，以公里為單位
-                transport: str - 使用的交通方式（例如：driving、transit、walking）
-                route_info: Dict - 詳細的路線資訊（若有），包含路徑指引等
+                transport: str - 使用的交通方式(例如:driving、transit、walking)
+                route_info: Dict - 詳細的路線資訊(若有)，包含路徑指引等
         """
+
+        # 將抵達時間四捨五入到最近的5分鐘
+        rounded_minutes = ceil(arrival_time.minute / 5) * 5
+
+        if rounded_minutes == 60:
+            rounded_arrival = arrival_time.replace(
+                hour=arrival_time.hour + 1, minute=0)
+        else:
+            rounded_arrival = arrival_time.replace(minute=rounded_minutes)
+            
+        # 調整離開時間,保持相同的停留時間
+        time_diff = rounded_arrival - arrival_time
+        rounded_departure = departure_time + time_diff
 
         # 取得當天的營業時間
         weekday = arrival_time.isoweekday()  # 1-7
@@ -400,8 +423,8 @@ class BasePlanningStrategy:
             'hours': matching_hours,
             'lat': place.lat,
             'lon': place.lon,
-            'start_time': arrival_time.strftime('%H:%M'),
-            'end_time': departure_time.strftime('%H:%M'),
+            'start_time': rounded_arrival.strftime('%H:%M'),
+            'end_time': rounded_departure.strftime('%H:%M'),
             'duration': place.duration_min,
             'transport': {
                 'mode': transport_chinese,
@@ -421,7 +444,7 @@ class BasePlanningStrategy:
                     travel_info: Dict) -> bool:
         """檢查地點是否可以加入行程
 
-        檢查項目：
+        檢查項目:
         1. 是否有足夠的剩餘時間(含交通和停留)
         2. 是否在營業時間內
         3. 是否符合當前時段

@@ -3,10 +3,10 @@ from dotenv import load_dotenv
 from typing import Dict, List, Tuple
 from concurrent.futures import ThreadPoolExecutor
 
-from feature.llm import LLM_Manager
-from feature.retrieval import qdrant_search
-from feature.sql_csv import pandas_search
-from feature.nosql_mongo import trip_db
+from feature.llm.LLM import LLM_Manager
+from feature.retrieval.qdrant_search import qdrant_search
+from feature.sql_csv.sql_csv import pandas_search
+from feature.nosql_mongo.mongo_trip.db_helper import trip_db
 from feature.trip import TripPlanningSystem
 
 
@@ -26,6 +26,7 @@ class TripController:
                 - ChatGPT_api_key: ChatGPT API 金鑰
         """
         self.config = config
+        self.LLM_obj = LLM_Manager(self.config['ChatGPT_api_key'])
         self.trip_planner = TripPlanningSystem()
 
     def process_message(
@@ -48,31 +49,33 @@ class TripController:
                 line_id = "test_user_id"  # 這裡先寫死測試用
 
             # 1. 記錄用戶輸入
-            trip_db.record_user_input(
-                line_id=line_id,
-                input_text=input_text
-            )
+            trip_db.record_user_input(line_id, input_text)
 
-            # 需要時再取得之前的行程
+            # 2. 取得之前的行程
             latest = trip_db.get_latest_plan(line_id=line_id)
             latest_itinerary = latest.get('itinerary') if latest else None
 
-            # 2. 取得歷史記錄給LLM
-            history = trip_db.get_input_history(line_id)
-            history_text = format_history_for_llm(history)
-
-            # 3. LLM意圖分析
-            period_describe, unique_requirement, base_requirement, restart_index = (
-                self._analyze_intent(text=history_text)
+            # 3. 準備給LLM的文字(包含歷史整理)
+            input_for_LLM = self._prepare_input_text(
+                text=input_text,
+                line_id=line_id,
+                previous_trip=latest_itinerary
             )
 
-            # 4. 向量檢索
+            # 4. LLM意圖分析
+            period_describe, unique_requirement, base_requirement, restart_index = (
+                self._analyze_intent(text=input_for_LLM)
+            )
+            
+            restart_index = int(restart_index[0]) if restart_index else 0
+
+            # 5. 向量檢索
             placeIDs = self._vector_retrieval(period_describe)
 
-            # 5. 取得景點詳細資料
+            # 6. 取得景點詳細資料
             location_details = self._get_places(placeIDs, unique_requirement)
 
-            # 6. 規劃行程
+            # 7. 規劃行程
             result = self._plan_trip(
                 location_details=location_details,
                 base_requirement=base_requirement,
@@ -80,10 +83,11 @@ class TripController:
                 restart_index=restart_index,
             )
 
-            # 7. 儲存規劃結果
+            # 8. 儲存規劃結果
             trip_db.save_plan(
                 line_id=line_id,
                 input_text=input_text,
+                restart_index=restart_index,
                 requirement=base_requirement,
                 itinerary=result
             )
@@ -96,8 +100,6 @@ class TripController:
     def _analyze_intent(
         self,
         text: str,
-        requirement: List[Dict] = None,
-        previous_trip: List[Dict] = None,
     ) -> Tuple[List[Dict], List[Dict], List[Dict], List[int]]:
         """
         分析使用者意圖
@@ -111,9 +113,8 @@ class TripController:
                 - List[Dict]: 特殊需求 (對應圖中的 'b')
                 - List[Dict[str, Union[int, str, None]]]: 客戶基本要求 (對應圖中的 'c')
         """
-        LLM_obj = LLM_Manager(self.config['ChatGPT_api_key'])
-
-        return LLM_obj.Thinking_fun(text)
+        # LLM_obj = LLM_Manager(self.config['ChatGPT_api_key'])
+        return self.LLM_obj.Thinking_fun(text)
 
     def _vector_retrieval(self, period_describe: List[Dict]) -> Dict:
         """
@@ -140,7 +141,7 @@ class TripController:
                 collection_name='view_restaurant',
                 config=self.config,
                 score_threshold=0.5,
-                limit=1000
+                limit=150
             )
             # period_describe = [
             #     {'上午': '喜歡在文青咖啡廳裡享受幽靜且美麗的裝潢'},
@@ -223,6 +224,52 @@ class TripController:
             restart_index=restart_index
         )
 
+    def _prepare_input_text(
+        self,
+        text: str,
+        line_id: str,
+        previous_trip: List[Dict] = None
+    ) -> str:
+        """準備給LLM的輸入文字
+
+        Returns:
+            str: 組合後的輸入文字
+        """
+        # 取得歷史狀態
+        history = trip_db.get_history_status(line_id)
+        # if not history:
+        #     return text
+
+        # 需要整理就先整理和儲存
+        if history["needs_summary"]:
+            messages = [m["text"] for m in history["new_messages"]]
+            # 如果有舊摘要就加入
+            if history["summary"]:
+                messages.insert(0, history["summary"])
+            # 整理歷史
+            summary = self.LLM_obj.summarize_history("\n".join(messages))
+            trip_db.update_summary(line_id, summary)
+            # 用新摘要
+            history["summary"] = summary
+            history["new_messages"] = []
+
+        # 組合輸入
+        parts = []
+
+        if history["summary"]:
+            parts.append(f"用戶歷史偏好:\n{history['summary']}")
+
+        if history["new_messages"]:
+            parts.append("新對話:\n" + "\n".join(m["text"]
+                         for m in history["new_messages"]))
+
+        if previous_trip:
+            parts.append("之前的行程:\n" + str(previous_trip))
+
+        parts.append(f"當前輸入:\n{text}")
+
+        return "\n\n".join(parts)
+
 
 def format_history_for_llm(history: List[Dict]) -> str:
     """把歷史記錄格式化成適合LLM的文字格式
@@ -288,7 +335,8 @@ if __name__ == "__main__":
         config = init_config()
         controller_instance = TripController(config)
 
-        test_input = "想去台北文青的地方，吃午餐要便宜又好吃，下午想去逛有特色的景點，晚餐要可以跟朋友聚餐"
+        # test_input = "開車，想去台北文青的地方，吃午餐要便宜又好吃，下午想去逛有特色的景點，晚餐要可以跟朋友聚餐"
+        test_input = "不想去公園"
         result = controller_instance.process_message(test_input)
         controller_instance.trip_planner.print_itinerary(result)
 

@@ -35,5 +35,5 @@ def run_trip_planner(
 
 
 if __name__ == "__main__":
-    test_input = "想去台北文青的地方，吃午餐要便宜又好吃，下午想去逛有特色的景點，晚餐要可以跟朋友聚餐"
+    test_input = "幫我規畫戶外行程"
     result = run_trip_planner(text=test_input, line_id="test_user_id")

@@ -55,6 +55,7 @@ class TripDBHandler:
         self,
         line_id: str,
         input_text: str,
+        restart_index: int,
         requirement: Dict,
         itinerary: List[Dict]
     ) -> Optional[int]:
@@ -63,6 +64,7 @@ class TripDBHandler:
         Args:
             line_id: LINE用戶ID 
             input_text: 觸發規劃的輸入文字
+            restart_index: 重新規劃的索引
             requirement: 規劃需求
             itinerary: 規劃行程
 
@@ -84,6 +86,7 @@ class TripDBHandler:
                 "timestamp": datetime.now(UTC),
                 "input_text": input_text,
                 "requirement": requirement,
+                "restart_index": restart_index,
                 "itinerary": [{
                     "step": item["step"],
                     "name": item["name"],
@@ -92,10 +95,11 @@ class TripDBHandler:
                     "lon": item["lon"],
                     "period": item["period"],
                     "start_time": item["start_time"],
-                    "end_time": item["end_time"]
-                }
-                    for item in itinerary
-                ]
+                    "end_time": item["end_time"],
+                    "hours": item["hours"],
+                    "transport": item["transport"],
+                    "duration": item["duration"]
+                } for item in itinerary]
             }
 
             self.db.planner_records.insert_one(record)
@@ -175,6 +179,86 @@ class TripDBHandler:
         except PyMongoError as e:
             print(f"取得規劃記錄失敗: {str(e)}")
             return None
+
+    def get_history_status(
+        self,
+        line_id: str,
+        count_threshold: int = 10
+    ) -> Dict:
+        """取得歷史紀錄狀態
+
+        Returns:
+            Dict: {
+                "summary": str,            # 上次整理的摘要,沒有則None 
+                "new_messages": List[str], # 新對話列表
+                "needs_summary": bool,     # 是否需要整理(超過門檻或沒整理過)
+                "last_summary_time": datetime # 上次整理時間,沒有則None
+            }
+        """
+        try:
+            user = self.db.user_preferences.find_one({"line_id": line_id})
+            if not user:
+                return {
+                    "summary": None,
+                    "new_messages": [],
+                    "needs_summary": False,
+                    "last_summary_time": None
+                }
+
+            summary = user.get("preferences_summary")
+            last_time = user.get("last_summary_time")
+            messages = user.get("input_history", [])
+
+            # 取得最後整理後的對話
+            new_messages = (
+                messages if not last_time
+                else [m for m in messages if m["timestamp"] > last_time]
+            )
+
+            needs_summary = (
+                len(new_messages) >= count_threshold or
+                not last_time  # 沒整理過也要整理
+            )
+
+            return {
+                "summary": summary,
+                "new_messages": new_messages,
+                "needs_summary": needs_summary,
+                "last_summary_time": last_time
+            }
+        except Exception as e:
+            print(f"取得歷史狀態失敗: {str(e)}")
+            return None
+
+    def update_summary(
+        self,
+        line_id: str,
+        summary: str
+    ) -> bool:
+        """更新歷史摘要
+
+        Args:
+            line_id: 用戶ID
+            summary: 整理後的摘要
+
+        Returns:
+            bool: 是否成功
+        """
+        try:
+            result = self.db.user_preferences.update_one(
+                {"line_id": line_id},
+                {
+                    "$set": {
+                        "preferences_summary": summary,
+                        "last_summary_time": datetime.now(UTC)
+                    }
+                },
+                upsert=True
+            )
+            return result.modified_count > 0 or result.upserted_id is not None
+        except Exception as e:
+            print(f"更新摘要失敗: {str(e)}")
+            return False
 
     def clear_user_data(
         self,

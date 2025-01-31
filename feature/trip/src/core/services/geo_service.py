@@ -33,7 +33,7 @@ class GeoService:
         'driving': 40,    # 開車
         'transit': 30,    # 大眾運輸
         'walking': 5,     # 步行
-        'bicycling': 15   # 騎自行車
+        'bicycling': 15   # 騎車
     }
 
     def __init__(self):

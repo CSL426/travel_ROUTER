@@ -366,7 +366,7 @@ class TripPlanningSystem:
         TRANSPORT_MODE_MAPPING = {
             "大眾運輸": "transit",
             "開車": "driving",
-            "騎自行車": "bicycling",
+            "騎車": "bicycling",
             "步行": "walking"
         }
 
