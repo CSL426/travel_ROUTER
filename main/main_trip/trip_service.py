@@ -4,7 +4,7 @@ from main.main_trip import TripController, init_config
 
 
 def run_trip_planner(
-    text: str,
+    text: str = "",
     line_id: str = None,
 ) -> List[Dict]:
     """執行行程規劃
@@ -36,4 +36,4 @@ def run_trip_planner(
 
 if __name__ == "__main__":
     test_input = "幫我規畫戶外行程"
-    result = run_trip_planner(text=test_input, line_id="test_user_id")
+    result = run_trip_planner(line_id="test_user_id")
