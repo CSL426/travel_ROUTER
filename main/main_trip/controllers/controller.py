@@ -31,7 +31,7 @@ class TripController:
 
     def process_message(
         self,
-        input_text: str,
+        input_text: str = "",
         line_id: str = None,
     ) -> List[Dict]:
         """
@@ -66,7 +66,7 @@ class TripController:
             period_describe, unique_requirement, base_requirement, restart_index = (
                 self._analyze_intent(text=input_for_LLM)
             )
-            
+
             restart_index = int(restart_index[0]) if restart_index else 0
 
             # 5. 向量檢索
@@ -113,7 +113,6 @@ class TripController:
                 - List[Dict]: 特殊需求 (對應圖中的 'b')
                 - List[Dict[str, Union[int, str, None]]]: 客戶基本要求 (對應圖中的 'c')
         """
-        # LLM_obj = LLM_Manager(self.config['ChatGPT_api_key'])
         return self.LLM_obj.Thinking_fun(text)
 
     def _vector_retrieval(self, period_describe: List[Dict]) -> Dict:
@@ -226,8 +225,8 @@ class TripController:
 
     def _prepare_input_text(
         self,
-        text: str,
-        line_id: str,
+        text: str = "",
+        line_id: str = "test_user_id",
         previous_trip: List[Dict] = None
     ) -> str:
         """準備給LLM的輸入文字
@@ -246,8 +245,23 @@ class TripController:
             # 如果有舊摘要就加入
             if history["summary"]:
                 messages.insert(0, history["summary"])
-            # 整理歷史
-            summary = self.LLM_obj.summarize_history("\n".join(messages))
+
+            try:
+                # 過濾None並轉字串
+                valid_messages = [
+                    str(msg) for msg in messages if msg is not None
+                ]
+                if valid_messages:
+                    # 整理歷史
+                    summary = self.LLM_obj.summarize_history(
+                        "\n".join(valid_messages)
+                    )
+                else:
+                    summary = "目前沒有可總結的歷史對話"
+            except Exception as e:
+                print(f"處理歷史訊息時發生錯誤: {str(e)}")
+                summary = "總結歷史訊息時發生錯誤"
+
             trip_db.update_summary(line_id, summary)
             # 用新摘要
             history["summary"] = summary
