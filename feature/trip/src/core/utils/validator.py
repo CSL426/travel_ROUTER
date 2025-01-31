@@ -26,15 +26,20 @@ class TripValidator:
     TIME_PATTERN = r'^([01][0-9]|2[0-3]):[0-5][0-9]$'
     DATE_PATTERN = r'^(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$'
 
+    def __init__(self, message: str, field: str = None):
+        self.message = message
+        self.field = field
+        super().__init__(self.message)
+
     @classmethod
     def validate_coordinates(cls, lat: float, lon: float) -> bool:
         """驗證座標是否在有效範圍內
 
-        輸入:
+        Args:
             lat: 緯度, -90 到 90 度
             lon: 經度, -180 到 180 度
 
-        回傳:
+        Returns:
             bool: True=有效, False=無效
 
         使用範例:
@@ -52,11 +57,11 @@ class TripValidator:
     def validate_time_string(cls, time_str: str) -> bool:
         """驗證時間字串格式
 
-        輸入:
+        Args:
             time_str: HH:MM 格式時間字串
                      支援 "none" 作為特殊值
 
-        回傳:
+        Returns:
             bool: True=格式正確, False=格式錯誤
 
         使用範例:
@@ -75,11 +80,11 @@ class TripValidator:
     def validate_date_string(cls, date_str: str) -> bool:
         """驗證日期字串格式
 
-        輸入:
+        Args:
             date_str: MM-DD 格式日期字串
                      支援 "none" 作為特殊值
 
-        回傳:
+        Returns:
             bool: True=格式正確, False=格式錯誤
 
         使用範例:
@@ -98,11 +103,11 @@ class TripValidator:
     def validate_time_range(cls, start_time: str, end_time: str) -> bool:
         """驗證時間範圍的有效性
 
-        輸入:
+        Args:
             start_time: 開始時間 (HH:MM)
             end_time: 結束時間 (HH:MM)
 
-        回傳:
+        Returns:
             bool: True=有效範圍, False=無效範圍
 
         使用範例:
@@ -127,7 +132,7 @@ class TripValidator:
     def validate_place(cls, place_data: Dict) -> None:
         """驗證地點資料的完整性與正確性
 
-        輸入:
+        Args:
             place_data: Dict, 地點資料字典，必須包含:
                 - name: 名稱
                 - lat/lon: 座標
@@ -182,7 +187,7 @@ class TripValidator:
     def validate_business_hours(cls, hours: Dict) -> None:
         """驗證營業時間格式與邏輯
 
-        輸入:
+        Args:
             hours: Dict, 營業時間字典，格式為:
                 {
                     1: [{'start': '09:00', 'end': '17:00'}],  # 週一
@@ -191,18 +196,8 @@ class TripValidator:
                     7: [{'start': '09:00', 'end': '17:00'}]   # 週日
                 }
                 - 支援多時段營業(陣列)
-                - None 表示該日店休
+                - None/'none' 表示該日店休
                 - 支援跨日營業時間
-
-        異常:
-            ValidationError: 格式錯誤或時間無效
-
-        使用範例:
-            >>> hours = {
-                    1: [{'start': '09:00', 'end': '17:00'}],
-                    2: [{'start': '09:00', 'end': '17:00'}]
-                }
-            >>> TripValidator.validate_business_hours(hours)
         """
         # 檢查每天的營業時間
         for day, slots in hours.items():
@@ -210,8 +205,8 @@ class TripValidator:
             if not isinstance(day, int) or day < 1 or day > 7:
                 raise ValidationError(f"無效的星期格式：{day}", "business_hours")
 
-            # 允許 None 值表示店休
-            if slots is None:
+            # 允許 None 或 'none' 表示店休
+            if slots is None or slots == 'none':
                 continue
 
             # 必須是時段列表
@@ -245,7 +240,7 @@ class TripValidator:
     def validate_trip_requirement(cls, requirement: Dict) -> None:
         """驗證行程需求的完整性與正確性
 
-        輸入:
+        Args:
             requirement: Dict, 行程需求字典，必須包含:
                 - start_time: 開始時間 (HH:MM)
                 - end_time: 結束時間 (HH:MM)
@@ -336,7 +331,7 @@ class TripValidator:
     def validate_transport_mode(cls, mode: str) -> None:
         """驗證交通方式
 
-        輸入:
+        Args:
             mode: 交通方式字串
                  有效值: transit, driving, walking, bicycling
 
@@ -354,11 +349,11 @@ class TripValidator:
     def set_default_requirement(cls, requirement: Dict) -> Dict:
         """設定預設的行程需求值
 
-        輸入:
+        Args:
             requirement: Dict, 原始需求字典
                         可能包含部分設定值
 
-        回傳:
+        Returns:
             Dict: 包含所有必要欄位的完整需求字典
 
         使用範例:
@@ -407,11 +402,11 @@ class TripValidator:
     def convert_coordinates(cls, coord_str: str) -> Optional[Dict[str, float]]:
         """轉換座標字串為經緯度字典
 
-        輸入:
+        Args:
             coord_str: 座標字串，格式：
                       "lat,lon" 或 "lat, lon"
 
-        回傳:
+        Returns:
             Dict: {'lat': float, 'lon': float} 或 None
 
         使用範例:
@@ -442,10 +437,10 @@ class TripValidator:
     def format_business_hours(cls, hours: Dict) -> Dict:
         """格式化營業時間，確保格式一致
 
-        輸入:
+        Args:
             hours: 原始營業時間字典
 
-        回傳:
+        Returns:
             Dict: 標準格式的營業時間字典
 
         使用範例:
@@ -467,13 +462,14 @@ class TripValidator:
 
         return formatted
 
+
 class TimeCalculator:
     # 停留時間對照表
     DEFAULT_DURATIONS = {
         # 正餐餐廳 (90分鐘)
         '中菜館': 90,
         '壽司店': 90,
-        # 快速餐飲 (45分鐘) 
+        # 快速餐飲 (45分鐘)
         '快餐店': 45,
         '麵店': 45,
         # 景點 (120分鐘)
@@ -483,14 +479,14 @@ class TimeCalculator:
         'default': 60
     }
 
-    @classmethod 
+    @classmethod
     def get_default_duration(cls, label: str) -> int:
         """計算預設停留時間
-        
-        輸入參數:
+
+        Args:
             label (str): 地點類型標籤
-            
-        回傳:
+
+        Returns:
             int: 建議停留時間(分鐘)
         """
         return cls.DEFAULT_DURATIONS.get(label, cls.DEFAULT_DURATIONS['default'])

@@ -32,3 +32,7 @@ def test_print_itinerary():
         assert True
     except Exception as e:
         pytest.fail(f"print_itinerary failed with error: {str(e)}")
+
+
+if __name__ == "__main__":
+    pytest.main(["-v", "-s", __file__])

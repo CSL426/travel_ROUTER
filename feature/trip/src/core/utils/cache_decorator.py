@@ -12,10 +12,10 @@ def cached(maxsize: int = 128) -> Callable:
 
     用於快取一般函數的回傳值，適用於輸入參數簡單的情況
 
-    輸入參數:
+    Args:
         maxsize: int - 快取的最大容量，超過此容量將移除最舊的項目
 
-    回傳:
+    Returns:
         Callable - 裝飾過的函數
     """
     def decorator(func: Callable[..., T]) -> Callable[..., T]:
@@ -58,11 +58,11 @@ def geo_cache(maxsize: int = 256):
     def make_cache_key(func_args: tuple, func_kwargs: dict) -> str:
         """從函數參數建立快取鍵值
 
-        輸入參數:
+        Args:
             func_args: 原始函數的位置參數
             func_kwargs: 原始函數的關鍵字參數
 
-        回傳:
+        Returns:
             str: 由座標和交通方式組成的唯一鍵值
         """
         try:

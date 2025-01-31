@@ -20,7 +20,7 @@ class GoogleMapsService:
     def __init__(self, api_key: str):
         """初始化
 
-        輸入:
+        Args:
             api_key: Google Maps API 金鑰
         """
         self.client = googlemaps.Client(key=api_key)
@@ -32,13 +32,13 @@ class GoogleMapsService:
                               departure_time: datetime = None) -> Dict:
         """計算交通時間和路線
 
-        輸入:
+        Args:
             origin: 起點座標 (緯度, 經度)
             destination: 終點座標 (緯度, 經度)
             mode: 交通方式
             departure_time: 出發時間
 
-        回傳:
+        Returns:
             Dict: {
                 'duration_minutes': int,    # 交通時間(分鐘)
                 'distance_meters': int,     # 距離(公尺)
@@ -82,10 +82,10 @@ class GoogleMapsService:
     def geocode(self, address: str) -> Dict[str, float]:
         """地址轉座標
 
-        輸入:
+        Args:
             address: 地址或地點名稱
 
-        回傳:
+        Returns:
             Dict: {'lat': 緯度, 'lon': 經度}
         """
         try:

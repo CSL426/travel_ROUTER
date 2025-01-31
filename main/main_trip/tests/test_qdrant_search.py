@@ -55,3 +55,7 @@ def test_environment_variables(config):
                      'qdrant_url', 'qdrant_api_key']
     for var in required_vars:
         assert config[var] is not None, f"Missing environment variable: {var}"
+
+
+if __name__ == "__main__":
+    pytest.main(["-v", "-s", __file__])
