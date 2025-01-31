@@ -80,7 +80,7 @@ def calculate_weighted_scores(points, user_location, weights):
     points.sort(key=lambda x: x['weighted_score'], reverse=True)
     
     # 過濾需要的欄位
-    required_fields = {'placeID', 'place_name', 'rating', 'lat', 'lon', 'new_avg_cost', 'hours', 'Location_URL', 'image_url'}
+    required_fields = {'placeID', 'place_name', 'rating', 'lat', 'lon', 'new_avg_cost','address', 'hours', 'location_url', 'image_url'}
     filtered_points = [
         {k: v for k, v in point.items() if k in required_fields}
         for point in points[:10]

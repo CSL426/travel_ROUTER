@@ -20,7 +20,7 @@ def recommandation(user_Q, config):
         collection_name='view_restaurant',
         config=config,
         score_threshold=0.5,
-        limit=50,
+        limit=30,
     )
     two = qdrant_obj.cloud_search(a) #透過llm的「形容客戶行程的一句話」，用向量資料庫去對比搜尋 
     three = sql_csv.pandas_search(system='plan',system_input=two,special_request_list= b) #透過向量資料庫跟llm的用戶特殊要求去抓出前100名符合的

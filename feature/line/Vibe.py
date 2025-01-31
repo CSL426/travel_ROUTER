@@ -24,7 +24,7 @@ def thinking(data):
         "size": "xl"  # 文字大小
     }
 
-    # 定義商店網址按鈕樣式
+    # 定義餐廳/景點google網址按鈕
     url = {
         "type": "uri",  # 連結類型
         "label": "WEBSITE",  # 按鈕顯示標籤
@@ -47,31 +47,27 @@ def thinking(data):
     # 迭代資料中的每個店鋪資料
     for point in data[0].values():
 
-         # 深拷貝避免相互影響
+         # 複製避免相互影響
         temp_loc = location.copy()
         temp_add = address.copy()
         temp_rat = rating.copy()
         temp_url = url.copy()
 
         # 安全地設置值，確保所有必要的字段都存在
-        temp_loc['text'] = point.get("name", "地點")
+        temp_loc['text'] = point.get("place_name", "地點")
         temp_add['text'] = point.get("address", "地址")
         temp_rat["text"] = str(point.get("rating", "0.0"))
-        temp_url["uri"] = point.get("url", "https://www.google.com/maps")
-        
+        temp_url["uri"] = point.get("location_url", "https://www.google.com/maps")
+        image = point["image_url"]
         # 拼接每個店鋪的Bubble格式資料
         bubble = {
             "type": "bubble",  # 顯示為Bubble
             "hero": {
                 "type": "image",  # 圖片類型
-                "url": "https://lh5.googleusercontent.com/p/AF1QipOWQPqSYjeLa6NXglvxOamX9Ywx4qmer0riVj2n=w426-h240-k-no",  # 預設的圖片URL，可以根據每個店鋪動態更換
+                "url": image,  # 預設的圖片URL，可以根據每個店鋪動態更換
                 "size": "full",  # 圖片填滿整個區域
                 "aspectRatio": "20:13",  # 圖片比例
                 "aspectMode": "cover",  # 視覺效果設置
-                "action": {
-                    "type": "uri",  # 動作類型為URI
-                    "uri": "https://line.me/"  # 默認點擊圖片後的網址，可以根據需要替換為店鋪的網址
-                }
             },
             "body": {
                 "type": "box",  # 使用box來排列內部元素
