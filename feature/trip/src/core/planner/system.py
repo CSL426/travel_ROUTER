@@ -154,7 +154,7 @@ class TripPlanningSystem:
         2. 時間格式的轉換
         3. 其他相關參數的整理
 
-        參數:
+        Args:
             locations: 已轉換為 PlaceDetail 的地點列表
             requirement: 包含規劃需求的字典
 

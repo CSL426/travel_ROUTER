@@ -1,6 +1,7 @@
 # src/core/models/place.py
 
 from typing import Any, List, Dict, Optional, Union
+import pandas as pd
 from pydantic import BaseModel, Field, field_validator, model_validator
 from datetime import datetime
 
@@ -136,7 +137,13 @@ class PlaceDetail(BaseModel):
             raise ValueError(f'無效的時段標記: {v}')
         return v
 
-    # @field_validator('hours')
+    @field_validator('label')
+    def validate_label(cls, v):
+        """驗證label格式"""
+        if pd.isna(v):  # 檢查是否為NaN
+            return "未分類"
+        return str(v)  # 確保轉換為字串
+
     @model_validator(mode='before')
     def validate_hours(cls, values: Dict) -> Dict:
         """前處理驗證
@@ -166,7 +173,7 @@ class PlaceDetail(BaseModel):
             values['hours'] = {i: [{'start': '00:00', 'end': '23:59'}]
                                for i in range(1, 8)}
             return values
-        
+
         # 處理每一天
         processed = {}
         for day in range(1, 8):
@@ -249,23 +256,42 @@ class PlaceDetail(BaseModel):
         Args:
             day: 1-7 代表週一到週日
             time_str: "HH:MM" 格式時間
+
+        Returns:
+            bool: True表示營業中,False表示不營業
         """
-        if day not in self.hours:
+        # 檢查該天是否有營業時間設定
+        if not self.hours or day not in self.hours:
             return False
 
+        # 檢查時段是否有效
         time_slots = self.hours[day]
-        if not time_slots or time_slots[0] is None:
+        if not time_slots or not isinstance(time_slots, list):
             return False
 
         check_time = datetime.strptime(
-            time_str, TimeService.TIME_FORMAT).time()
+            time_str,
+            TimeService.TIME_FORMAT
+        ).time()
 
         for slot in time_slots:
-            if slot is None:
+            if not slot or not isinstance(slot, dict):
                 continue
 
-            start, end = TimeService.parse_time_range(
-                slot['start'], slot['end'])
+            # 確保slot有start和end
+            if 'start' not in slot or 'end' not in slot:
+                continue
+
+            try:
+                start = datetime.strptime(
+                    slot['start'], TimeService.TIME_FORMAT
+                ).time()
+                end = datetime.strptime(
+                    slot['end'], TimeService.TIME_FORMAT
+                ).time()
+            except ValueError:
+                continue
+
             if TimeService.is_time_in_range(check_time, start, end, allow_overnight=True):
                 return True
 
