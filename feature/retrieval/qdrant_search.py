@@ -20,6 +20,7 @@ class qdrant_search:
                     'qdrant_url': str,
                     'qdrant_api_key': str
                 }
+        black_list 設定要過濾的 placeID 清單
         ```
     
     - 
@@ -47,13 +48,15 @@ class qdrant_search:
                                 'jina_headers_Authorization':str,
                                 'qdrant_url': str,
                                 'qdrant_api_key': str
-                                }
+                                },
+                black_list: list=[],
                 ):
         
         self.colleciton_name = collection_name
         self.config = config
         self.score_threshold = score_threshold
         self.limit = limit
+        self.black_list = black_list
         
 
 
@@ -81,7 +84,7 @@ class qdrant_search:
         qdrant_obj = qdrant_manager(collection_name=self.colleciton_name, 
                                     qdrant_url=config.get("qdrant_url"),
                                     qdrant_api_key= config.get("qdrant_api_key"))
-        result = qdrant_obj.search_vector(vector, self.score_threshold, self.limit)
+        result = qdrant_obj.search_vector(vector, self.score_threshold, self.limit, self.black_list)
         return result
 
 
@@ -138,13 +141,31 @@ if __name__ == "__main__":
                                score_threshold= 0,
                                limit=50)
 
+    # 旅遊搜索
+    input_query = {'上午': '喜歡在文青咖啡廳裡享受幽靜且美麗的裝潢'}
+    result = qdrant_obj.trip_search(input_query)
+
+    # print(result)
+    # print(len(result[0]))
+
+    # ===============================================================
+    # 情境搜索
+
+    qdrant_obj = qdrant_search(
+        collection_name= 'weii-black-list-test', 
+        config= config,
+        score_threshold= -1,
+        limit=1000,
+        # black_list=[],
+        black_list= ['ChIJ_5EDThKpQjQRf4L6uxaRpiI', 'ChIJ_3YUOnOsQjQRxaKUQca9pbg', 'ChIJ_3Drk2CpQjQRj60tccm_S-c',
+                    'ChIJ_0k1Uu2rQjQRHE3673mDzZw', 'ChIJ_4RNViOsQjQRIMcdxY-zq7E', 'ChIJ_2_GKFqlQjQRGAF9qRkQYRM', 
+                    'ChIJ_2re1N2oQjQRSUIvOgjlJfc', 'ChIJ_5VtCtioQjQRkjceKXaxmP4', 'ChIJ_3LZiLyvQjQR3SvEA0zV4Hk',
+                    # 'ChIJ-_1rl4WpQjQRFIxRQ1xCpw0'
+                    ]
+    )
+
     # 情境搜索
     input_query = ['喜歡在文青咖啡廳裡享受幽靜且美麗的裝潢']
     result = qdrant_obj.cloud_search(input_query)
     
-    # 旅遊搜索
-    input_query = {'上午': '喜歡在文青咖啡廳裡享受幽靜且美麗的裝潢'}
-    # result = qdrant_obj.trip_search(input_query)
-
     print(result)
-    print(len(result[0]))

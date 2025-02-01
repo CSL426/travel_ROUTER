@@ -87,11 +87,12 @@ class qdrant_manager:
         
         return len(result) > 0   # 若有 result 時返回 true
 
-    def search_vector(self, vector: list ,score_threshold: float, limit: int):
+    def search_vector(self, vector: list ,score_threshold: float, limit: int, black_list: list=[]):
         '''
         - 使用 vector 搜尋向量相似點
         - limit 設定回傳上限
         - score 設置回傳score threshhold
+        - black_list 設定要過濾的 placeID 清單
         - 回傳 : 
         
             ```
@@ -103,11 +104,24 @@ class qdrant_manager:
                 }]
             ```
         '''
+        # 建立過濾條件：placeID 不在 black_list 中
+        filter_condition = {
+            "must_not": [
+                {
+                    "key": "placeID",
+                    "match": {
+                        "any": black_list
+                    }
+                }
+            ]
+        } # if len(black_list)>0 else None
+
         result = self.qdrant_client.search(
                 collection_name = self.collection_name,
                 query_vector = vector,
                 score_threshold = score_threshold,
                 limit=limit,
+                query_filter = filter_condition,
             )
         match_data = {}
         for point in result:
@@ -315,3 +329,17 @@ if __name__ == "__main__":
     print("Qdrant 內目前總資料 : \n", "="*50)
     qdrant_obj.get_collections()
     # qdrant_obj.get_points(payload_key=True)
+
+    # ---------------------------------------------------------------------------------------
+    qdrant_obj = qdrant_manager('weii-black-list-test', config.get("qdrant_url"), config.get("qdrant_api_key"))
+    result = qdrant_obj.search_vector(
+        vector=[0] * 1024 ,
+        score_threshold=-1, 
+        limit=1000, 
+        black_list=['ChIJ_5EDThKpQjQRf4L6uxaRpiI', 'ChIJ_3YUOnOsQjQRxaKUQca9pbg', 'ChIJ_3Drk2CpQjQRj60tccm_S-c',
+                     'ChIJ_0k1Uu2rQjQRHE3673mDzZw', 'ChIJ_4RNViOsQjQRIMcdxY-zq7E', 'ChIJ_2_GKFqlQjQRGAF9qRkQYRM', 
+                     'ChIJ_2re1N2oQjQRSUIvOgjlJfc', 'ChIJ_5VtCtioQjQRkjceKXaxmP4', 'ChIJ_3LZiLyvQjQR3SvEA0zV4Hk',
+                     # 'ChIJ-_1rl4WpQjQRFIxRQ1xCpw0'
+                     ]
+    )
+    print(result)
