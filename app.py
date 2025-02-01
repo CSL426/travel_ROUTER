@@ -11,7 +11,8 @@ from feature.line.bubbles_seting.Second_bubble import Second
 from feature.line.bubbles_seting.Third_bubble import Third
 from feature.line.Vibe import thinking  # 載入 Vibe 函數
 
-from main.main_trip import run_trip_planner
+from feature.nosql_mongo.mongo_trip.db_helper import trip_db
+from main.main_trip.trip_service import run_trip_planner
 from main.main_plan.recommandation_service import recommandation
 
 # 載入 .env 檔案中的環境變數
@@ -32,6 +33,8 @@ line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
 
 # 設定 /callback 路由，處理 LINE webhook 請求
+
+
 @app.route("/callback", methods=['POST'])
 def callback():
     app.logger.info("Received webhook request")
@@ -48,19 +51,29 @@ def callback():
     try:
         handler.handle(body, signature)  # 使用 handler 來處理簽名驗證
     except InvalidSignatureError:
-        app.logger.error("Invalid signature. Please check your channel access token/channel secret.")
+        app.logger.error(
+            "Invalid signature. Please check your channel access token/channel secret.")
         abort(400)  # 若簽名無效，返回 400 錯誤碼
 
     return 'OK'
 
 # 處理消息事件
+
+
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     text_message = event.message.text
 
+    # 記錄每一次用戶說的話
+    try:
+        line_id = event.source.user_id
+    except Exception:
+        line_id = 'none_line_id'
+    trip_db.record_user_input(line_id, text_message)
+
     user_Q = text_message[5:]
     text_message = text_message[0:4]
-    
+
     if text_message == "旅遊推薦":
         # 預設的旅遊推薦資料
         '''
@@ -116,7 +129,7 @@ def handle_message(event):
         ]
         '''
 
-        data = run_trip_planner(user_Q)
+        data = run_trip_planner(text=user_Q, line_id=line_id)
         # 創建 carousel 的內容
         A1 = {
             "type": "carousel",
@@ -128,26 +141,37 @@ def handle_message(event):
         }
 
         # 建立 Flex 訊息
-        flex_message = FlexSendMessage(alt_text="Travel recommendations", contents=A1)
+        flex_message = FlexSendMessage(
+            alt_text="Travel recommendations", contents=A1)
 
         # 回覆 Flex 訊息
         line_bot_api.reply_message(event.reply_token, flex_message)
-    
-    # elif text_message == "不要":
-    #     """
-    #     存取步數到mongodb到mongodb
-    #     """
-    #     step = data[-1]['step']
-    #     # mongo.insertOne(step)
-    #     pass
+
+    elif text_message == "資料初始化":
+        """
+        清除用戶所有資料
+        """
+        try:
+            success = trip_db.clear_user_data(line_id)
+
+            if success:
+                line_bot_api.reply_message(
+                    event.replytoken,
+                    TextMessage(text="初始化成功")
+                )
+        except Exception as e:
+            print(f"初始化錯誤: {e}")
+            line_bot_api.reply_message(
+                event.replytoken,
+                TextMessage(text="初始化錯誤，請稍後再試")
+            )
 
     # elif text_message == "不要":
     #     '''
     #     回傳不要的選項
     #     '''
     #     user_Q = '不要xxx'
-    #     user = data['name']     
-    #     step = data[i]['step']
+    #     user = data['name']
 
     #     pass
 
@@ -183,8 +207,9 @@ def handle_message(event):
         A2 = CarouselContainer(thinking(data))
 
         # 建立 Flex 訊息
-        flex_message = FlexSendMessage(alt_text="Vibe recommendations", contents=A2)
-        
+        flex_message = FlexSendMessage(
+            alt_text="Vibe recommendations", contents=A2)
+
         # 回覆 Flex 訊息
         line_bot_api.reply_message(event.reply_token, flex_message)
 

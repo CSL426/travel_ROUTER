@@ -66,3 +66,7 @@ def test_api_response_time(llm_client):
 
     except Exception as e:
         pytest.fail(f"API 測試失敗：{str(e)}")
+
+
+if __name__ == "__main__":
+    pytest.main(["-v", "-s", __file__])
