@@ -1,10 +1,20 @@
 from dotenv import dotenv_values
 from flask import Flask, request, abort
-from linebot import LineBotApi
-from linebot.webhook import WebhookHandler
-from linebot.exceptions import InvalidSignatureError  # 確保這是從新版 SDK 來的
-from linebot.models import MessageEvent, TextMessage, FlexSendMessage
-from linebot.models import FlexSendMessage, CarouselContainer
+from linebot.v3 import WebhookHandler
+from linebot.v3.exceptions import InvalidSignatureError
+from linebot.v3.messaging import (
+    Configuration,
+    ApiClient,
+    MessagingApi,
+    ReplyMessageRequest,
+    TextMessage,
+    FlexMessage,
+    FlexContainer,
+)
+from linebot.v3.webhooks import (
+    MessageEvent,
+    TextMessageContent
+)
 
 from feature.line.bubbles_seting.First_bubble import First
 from feature.line.bubbles_seting.Second_bubble import Second
@@ -24,16 +34,12 @@ if len(config) == 0:
 LINE_CHANNEL_ACCESS_TOKEN = config["LINE_CHANNEL_ACCESS_TOKEN"]
 LINE_CHANNEL_SECRET = config["LINE_CHANNEL_SECRET"]
 
-
 # 初始化 Flask 應用
 app = Flask(__name__)
 
-# 初始化 LineBotApi 和 WebhookHandler
-line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
+# 初始化 Configuration 和 WebhookHandler
+configuration = Configuration(access_token=LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
-
-# 設定 /callback 路由，處理 LINE webhook 請求
-
 
 @app.route("/callback", methods=['POST'])
 def callback():
@@ -51,176 +57,188 @@ def callback():
     try:
         handler.handle(body, signature)  # 使用 handler 來處理簽名驗證
     except InvalidSignatureError:
-        app.logger.error(
-            "Invalid signature. Please check your channel access token/channel secret.")
+        app.logger.error("Invalid signature. Please check your channel access token/channel secret.")
         abort(400)  # 若簽名無效，返回 400 錯誤碼
 
     return 'OK'
 
-# 處理消息事件
-
-
-@handler.add(MessageEvent, message=TextMessage)
+@handler.add(MessageEvent, message=TextMessageContent)
 def handle_message(event):
     text_message = event.message.text
 
-    # 記錄每一次用戶說的話
     try:
         line_id = event.source.user_id
     except Exception:
         line_id = 'none_line_id'
+    
     trip_db.record_user_input(line_id, text_message)
 
     user_Q = text_message[5:]
     text_message = text_message[0:4]
 
-    if text_message == "旅遊推薦":
-        # 預設的旅遊推薦資料
-        '''
-        data = [
-            {
-                "name": "家",
-                "start_time": "08:00",
-                "end_time": "08:30",
-                "duration": 30,
-                "hours": "08:00-08:30",
-                "transport": {
-                    "mode": "步行",
-                    "time": 0,
-                    "period": "00:00-00:00"
+    try:
+        with ApiClient(configuration) as api_client:
+            line_bot_api = MessagingApi(api_client)
+            
+            if text_message == "旅遊推薦":
+                # 預設的旅遊推薦資料
+                '''
+                data = [
+                    {
+                        "name": "家",
+                        "start_time": "08:00",
+                        "end_time": "08:30",
+                        "duration": 30,
+                        "hours": "08:00-08:30",
+                        "transport": {
+                            "mode": "步行",
+                            "time": 0,
+                            "period": "00:00-00:00"
+                        }
+                    },
+                    {
+                        "name": "台北101",
+                        "start_time": "09:00",
+                        "end_time": "11:30",
+                        "duration": 150,
+                        "hours": "09:00-11:30",
+                        "transport": {
+                            "mode": "大眾運輸",
+                            "time": 15,
+                            "period": "08:45-09:00"
+                        }
+                    },
+                    {
+                        "name": "鼎泰豐(信義店)",
+                        "start_time": "11:32",
+                        "end_time": "13:02",
+                        "duration": 90,
+                        "hours": "11:32-13:02",
+                        "transport": {
+                            "mode": "步行",
+                            "time": 5,
+                            "period": "11:25-11:30"
+                        }
+                    },
+                    {
+                        "name": "信義威秀商圈",
+                        "start_time": "13:08",
+                        "end_time": "14:08",
+                        "duration": 60,
+                        "hours": "13:08-14:08",
+                        "transport": {
+                            "mode": "開車",
+                            "time": 10,
+                            "period": "13:00-13:10"
+                        }
+                    }
+                ]
+                '''
+                data = run_trip_planner(text=user_Q, line_id=line_id)
+                
+                A1 = {
+                    "type": "carousel",
+                    "contents": [
+                        First(data),
+                        Second(data),
+                        Third(data),
+                    ]
                 }
-            },
-            {
-                "name": "台北101",
-                "start_time": "09:00",
-                "end_time": "11:30",
-                "duration": 150,
-                "hours": "09:00-11:30",
-                "transport": {
-                    "mode": "大眾運輸",
-                    "time": 15,
-                    "period": "08:45-09:00"
-                }
-            },
-            {
-                "name": "鼎泰豐(信義店)",
-                "start_time": "11:32",
-                "end_time": "13:02",
-                "duration": 90,
-                "hours": "11:32-13:02",
-                "transport": {
-                    "mode": "步行",
-                    "time": 5,
-                    "period": "11:25-11:30"
-                }
-            },
-            {
-                "name": "信義威秀商圈",
-                "start_time": "13:08",
-                "end_time": "14:08",
-                "duration": 60,
-                "hours": "13:08-14:08",
-                "transport": {
-                    "mode": "開車",
-                    "time": 10,
-                    "period": "13:00-13:10"
-                }
-            }
-        ]
-        '''
 
-        data = run_trip_planner(text=user_Q, line_id=line_id)
-        # 創建 carousel 的內容
-        A1 = {
-            "type": "carousel",
-            "contents": [
-                First(data),  # 呼叫 First_bubble 函數來生成第一個 Bubble
-                Second(data),  # 呼叫 Second_bubble 函數來生成第二個 Bubble
-                Third(data),   # 呼叫 Third_bubble 函數來生成第三個 Bubble
-            ]
-        }
-
-        # 建立 Flex 訊息
-        flex_message = FlexSendMessage(
-            alt_text="Travel recommendations", contents=A1)
-
-        # 回覆 Flex 訊息
-        line_bot_api.reply_message(event.reply_token, flex_message)
-
-    elif text_message == "資料初始化":
-        """
-        清除用戶所有資料
-        """
-        try:
-            success = trip_db.clear_user_data(line_id)
-
-            if success:
-                line_bot_api.reply_message(
-                    event.replytoken,
-                    TextMessage(text="初始化成功")
+                flex_message = FlexMessage(
+                    alt_text="Travel recommendations",
+                    contents=FlexContainer.from_dict(A1)
                 )
-        except Exception as e:
-            print(f"初始化錯誤: {e}")
-            line_bot_api.reply_message(
-                event.replytoken,
-                TextMessage(text="初始化錯誤，請稍後再試")
-            )
 
-    # elif text_message == "不要":
-    #     '''
-    #     回傳不要的選項
-    #     '''
-    #     user_Q = '不要xxx'
-    #     user = data['name']
+                line_bot_api.reply_message_with_http_info(
+                    ReplyMessageRequest(
+                        reply_token=event.reply_token,
+                        messages=[flex_message]
+                    )
+                )
 
-    #     pass
+            elif text_message == "資料初始化":
+                """
+                清除用戶所有資料
+                """
+                success = trip_db.clear_user_data(line_id)
+                
+                message_text = "初始化成功" if success else "初始化錯誤，請稍後再試"
+                
+                line_bot_api.reply_message_with_http_info(
+                    ReplyMessageRequest(
+                        reply_token=event.reply_token,
+                        messages=[TextMessage(text=message_text)]
+                    )
+                )
 
-    elif text_message == "情境搜索":
-        # 呼叫 Vibe 函數來生成情境搜索的資料
-        '''
-        data = [
-            {
-                "placeID0": {
-                    "name": "星巴克 信義南山門市",
-                    "rating": 4.2,
-                    "address": "110台北市信義區松仁路100號2F",
-                    "url": "https://maps.app.goo.gl/rB97sxDJbqmx9UE36"
-                },
-                "placeID1": {
-                    "name": "BUNA CAF'E 布納咖啡館 信義館",
-                    "rating": 4.7,
-                    "address": "110台北市信義區信義路四段415之3號",
-                    "url": "https://maps.app.goo.gl/XS5FeBkM7y7zCmiGA"
-                },
-                "placeID2": {
-                    "name": "CAFE!N 硬咖啡 吳興門市",
-                    "rating": 4.2,
-                    "address": "110台北市信義區吳興街8巷2號",
-                    "url": "https://maps.app.goo.gl/Yid2UJkhLKvVhycJ7"
+            elif text_message == "情境搜索":
+                # 呼叫 Vibe 函數來生成情境搜索的資料
+                '''
+                data = [
+                    {
+                        "placeID0": {
+                            "name": "星巴克 信義南山門市",
+                            "rating": 4.2,
+                            "address": "110台北市信義區松仁路100號2F",
+                            "url": "https://maps.app.goo.gl/rB97sxDJbqmx9UE36"
+                        },
+                        "placeID1": {
+                            "name": "BUNA CAF'E 布納咖啡館 信義館",
+                            "rating": 4.7,
+                            "address": "110台北市信義區信義路四段415之3號",
+                            "url": "https://maps.app.goo.gl/XS5FeBkM7y7zCmiGA"
+                        },
+                        "placeID2": {
+                            "name": "CAFE!N 硬咖啡 吳興門市",
+                            "rating": 4.2,
+                            "address": "110台北市信義區吳興街8巷2號",
+                            "url": "https://maps.app.goo.gl/Yid2UJkhLKvVhycJ7"
+                        }
+                    }
+                ]
+                '''
+                data = recommandation(user_Q, config)
+                
+                A2 = {
+                    "type": "carousel",
+                    "contents": thinking(data)
                 }
-            }
-        ]
-        '''
 
-        # 呼叫 Vibe 函數來生成 bubble 資料
-        data = recommandation(user_Q, config)
-        A2 = CarouselContainer(thinking(data))
+                flex_message = FlexMessage(
+                    alt_text="Vibe recommendations",
+                    contents=FlexContainer.from_dict(A2)
+                )
+                # 回覆 Flex 訊息
+                line_bot_api.reply_message_with_http_info(
+                    ReplyMessageRequest(
+                        reply_token=event.reply_token,
+                        messages=[flex_message]
+                    )
+                )
 
-        # 建立 Flex 訊息
-        flex_message = FlexSendMessage(
-            alt_text="Vibe recommendations", contents=A2)
+            else:
+                line_bot_api.reply_message_with_http_info(
+                    ReplyMessageRequest(
+                        reply_token=event.reply_token,
+                        messages=[TextMessage(text=f"輸入 : \n1. 情境搜索: 你想搜尋的目標 \n2. 旅遊推薦: 你想去的旅遊")]
+                    )
+                )
 
-        # 回覆 Flex 訊息
-        line_bot_api.reply_message(event.reply_token, flex_message)
+    except Exception as e:
+        app.logger.error(f"Error handling message: {str(e)}")
+        # 發生錯誤時，嘗試傳送錯誤訊息給使用者
+        try:
+            with ApiClient(configuration) as api_client:
+                line_bot_api = MessagingApi(api_client)
+                line_bot_api.reply_message_with_http_info(
+                    ReplyMessageRequest(
+                        reply_token=event.reply_token,
+                        messages=[TextMessage(text="處理訊息時發生錯誤，請稍後再試")]
+                    )
+                )
+        except Exception as inner_e:
+            app.logger.error(f"Error sending error message: {str(inner_e)}")
 
-    else:
-        # 如果收到其他訊息，回覆相同的文字訊息
-        line_bot_api.reply_message(
-            event.reply_token,
-            TextMessage(text=f"輸入 : \n1. 情境搜索: 你想搜尋的目標 \n2. 旅遊推薦: 你想去的旅遊")
-        )
-
-
-# 啟動 Flask 伺服器
 if __name__ == "__main__":
     app.run(debug=False, host="0.0.0.0", port=8787)
