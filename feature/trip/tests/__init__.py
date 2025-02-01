@@ -89,10 +89,10 @@ def create_test_datetime(time_str: str) -> datetime:
     """
     建立測試用的日期時間物件
 
-    輸入參數：
+    輸入Args:
         time_str: 時間字串(格式：HH:MM)
 
-    回傳：
+    Returns:
         datetime: 當天的指定時間
     """
     return datetime.strptime(time_str, "%H:%M")
@@ -102,7 +102,7 @@ def get_default_test_range() -> tuple:
     """
     取得預設的測試時間範圍
 
-    回傳：
+    Returns:
         tuple: (開始時間, 結束時間)，皆為 datetime 物件
     """
     start = create_test_datetime(TEST_CONSTANTS["DEFAULT_START_TIME"])

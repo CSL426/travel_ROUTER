@@ -1,6 +1,5 @@
 # src/core/planner/strategy.py
 
-from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
 from math import ceil
 import random
@@ -21,27 +20,32 @@ class BasePlanningStrategy:
     4. 追蹤規劃進度
     """
 
-    def __init__(self,
-                 time_service: TimeService,
-                 geo_service: GeoService,
-                 place_scoring: PlaceScoring,
-                 config: Dict):
-        """初始化規劃策略
+    def __init__(
+        self,
+        time_service: TimeService,
+        geo_service: GeoService,
+        place_scoring: PlaceScoring,
+        config: Dict
+    ):
+        """初始化
 
         Args:
-            time_service: 時間服務，處理時間計算與時段判斷
-            geo_service: 地理服務，處理距離計算與路線規劃
-            place_scoring: 地點評分服務，計算地點分數
-            config: 規劃設定，必須包含:
-                - start_time: datetime 開始時間
-                - end_time: datetime 結束時間
-                - travel_mode: str 交通方式
-                - distance_threshold: float 最大可接受距離(公里)
+            time_service: 時間服務
+            geo_service: 地理服務 
+            place_scoring: 地點評分服務
+            config: 規劃設定,必須包含:
+                - start_time: datetime 
+                - end_time: datetime 
+                - travel_mode: str
         """
         # 基礎服務元件
         self.time_service = time_service
         self.geo_service = geo_service
-        self.place_scoring = place_scoring
+        self.place_scoring = PlaceScoring(
+            time_service=time_service,
+            geo_service=geo_service,
+            travel_mode=config['travel_mode']  # 傳入交通方式
+        )
 
         # 基本設定
         self.start_time = config['start_time']
@@ -65,19 +69,42 @@ class BasePlanningStrategy:
         self.lunch_completed = False
         self.dinner_completed = False
 
-    def select_next_place(self,
-                          current_location: PlaceDetail,
-                          available_places: List[PlaceDetail],
-                          current_time: datetime) -> Optional[Tuple[PlaceDetail, Dict]]:
-        """選擇下一個地點"""
+    def select_next_place(
+        self,
+        current_location: PlaceDetail,
+        available_places: List[PlaceDetail],
+        current_time: datetime
+    ) -> Optional[Tuple[PlaceDetail, Dict]]:
+        """選擇下一個地點
+
+        Args:
+            current_location: 當前位置
+            available_places: 可選擇的地點列表
+            current_time: 當前時間
+
+        Returns:
+            Optional[Tuple[PlaceDetail, Dict]]: 選中的地點和交通資訊,
+                                            若無合適地點則返回None
+        """
         # 1. 取得當前時段
         current_period = self.time_service.get_current_period(current_time)
 
-        # 2. 篩選符合時段的地點
-        suitable_places = [
-            place for place in available_places
-            if place.period == current_period and place.name not in self.visited_places
-        ]
+        # 2. 篩選符合時段且有效的地點
+        suitable_places = []
+
+        for place in available_places:
+            # 檢查基本條件
+            if (place.period != current_period or
+                    place.name in self.visited_places):
+                continue
+
+            # 檢查營業時間
+            weekday = current_time.isoweekday()
+            time_str = current_time.strftime(TimeService.TIME_FORMAT)
+            if not place.is_open_at(weekday, time_str):
+                continue
+
+            suitable_places.append(place)
 
         if not suitable_places:
             print(f"沒有符合{current_period}時段的地點")
@@ -91,17 +118,15 @@ class BasePlanningStrategy:
                 {'lat': place.lat, 'lon': place.lon}
             )
 
-            if distance <= self.distance_threshold:
-                # 使用預估交通時間計算評分
-                estimated_time = distance * 2  # 粗略估計，1公里約2分鐘
-                score = self.place_scoring.calculate_score(
-                    place=place,
-                    current_location=current_location,
-                    current_time=current_time,
-                    travel_time=estimated_time
-                )
-                if score > float('-inf'):
-                    scored_places.append((place, score))
+            estimated_time = distance * 2
+            score = self.place_scoring.calculate_score(
+                place=place,
+                current_location=current_location,
+                current_time=current_time,
+                travel_time=estimated_time
+            )
+            if score > float('-inf'):
+                scored_places.append((place, score))
 
         if not scored_places:
             print("沒有在可接受距離內的地點")
@@ -109,10 +134,15 @@ class BasePlanningStrategy:
 
         # 4. 取評分最高的前3-5個地點
         top_places = sorted(
-            scored_places, key=lambda x: x[1], reverse=True)[:5]
+            scored_places,
+            key=lambda x: x[1],
+            reverse=True
+        )[:5]
 
         # 5. 隨機選擇一個
-        selected_place, _ = random.choice(top_places[:max(3, len(top_places))])
+        selected_place, _ = random.choice(
+            top_places[:max(3, len(top_places))]
+        )
 
         # 6. 只對選中的地點取得路線資訊
         travel_info = self.geo_service.get_route(
@@ -134,7 +164,7 @@ class BasePlanningStrategy:
                 previous_trip: List[Dict] = None) -> List[Dict]:
         """執行行程規劃
 
-        這是策略的主要執行方法，負責:
+        這是策略的主要執行方法,負責:
         1. 初始化行程狀態
         2. 依照時段選擇適合的地點
         3. 建立完整行程資訊
@@ -147,7 +177,7 @@ class BasePlanningStrategy:
             previous_trip: 之前的行程(選填)
 
         Returns:
-            List[Dict] - 完整的行程列表，每個行程項目包含:
+            List[Dict] - 完整的行程列表,每個行程項目包含:
                 - name: str - 地點名稱
                 - step: int - 順序編號
                 - start_time: str - 到達時間(HH:MM格式)
@@ -216,7 +246,7 @@ class BasePlanningStrategy:
             )
 
             if not next_place:
-                print("找不到合適的下一個地點，結束規劃")
+                print("找不到合適的下一個地點,結束規劃")
                 break
 
             place, travel_info = next_place
@@ -233,7 +263,7 @@ class BasePlanningStrategy:
 
             # 檢查是否超過結束時間
             if departure_time > self.end_time:
-                print("已達每日結束時間，停止規劃")
+                print("已達每日結束時間,停止規劃")
                 break
 
             # 建立行程項目
@@ -327,36 +357,37 @@ class BasePlanningStrategy:
         """
         return arrival_time + timedelta(minutes=duration_minutes)
 
-    def _create_itinerary_item(self,
-                               place: PlaceDetail,
-                               arrival_time: datetime,
-                               departure_time: datetime,
-                               travel_info: Dict) -> Dict:
+    def _create_itinerary_item(
+        self,
+        place: PlaceDetail,
+        arrival_time: datetime,
+        departure_time: datetime,
+        travel_info: Dict
+    ) -> Dict:
         """建立行程項目
 
-        整合所有資訊，建立完整的行程項目資料
+        整合地點、時間和交通等資訊,建立完整的行程項目資料。
 
         Args:
-            place: PlaceDetail 地點資訊
-            arrival_time: datetime 到達時間
-            departure_time: datetime 離開時間
-            travel_info: Dict 交通資訊，必須包含:
-                - duration_minutes: 交通時間(分鐘)
-                - distance_km: 距離(公里)
-                - transport_mode: 交通方式
-                - route_info: 路線資訊(選填)
+            place: PlaceDetail - 地點資訊
+            arrival_time: datetime - 到達時間 
+            departure_time: datetime - 離開時間
+            travel_info: Dict - 交通資訊,應包含:
+                - duration_minutes: int 
+                - distance_km: float
+                - transport_mode: str
+                - route_info: Dict (選填)
 
         Returns:
-            Dict 完整的行程項目資訊，包含:
-                name: str - 地點名稱
-                step: int - 在整個行程中的順序編號，從1開始計數
-                start_time: str - 到達時間，採用 "HH:MM" 格式 (例如 "09:30")
-                end_time: str - 離開時間，採用 "HH:MM" 格式
-                duration: int - 在該地點的停留時間，以分鐘為單位
-                travel_time: int - 到達該地點所需的交通時間，以分鐘為單位
-                travel_distance: float - 到達該地點的交通距離，以公里為單位
-                transport: str - 使用的交通方式(例如:driving、transit、walking)
-                route_info: Dict - 詳細的路線資訊(若有)，包含路徑指引等
+            Dict: 包含以下資訊的行程項目:
+                - name: str
+                - label: str  
+                - hours: str
+                - lat/lon: float
+                - start_time/end_time: str (HH:MM格式)
+                - duration: int (分鐘)
+                - transport: Dict
+                - period: str
         """
 
         # 將抵達時間四捨五入到最近的5分鐘
@@ -367,7 +398,7 @@ class BasePlanningStrategy:
                 hour=arrival_time.hour + 1, minute=0)
         else:
             rounded_arrival = arrival_time.replace(minute=rounded_minutes)
-            
+
         # 調整離開時間,保持相同的停留時間
         time_diff = rounded_arrival - arrival_time
         rounded_departure = departure_time + time_diff
@@ -379,11 +410,19 @@ class BasePlanningStrategy:
         # 找出符合抵達時間的營業時段
         matching_hours = None
         for slot in day_hours:
-            if slot:
-                start = datetime.strptime(slot['start'], '%H:%M').time()
-                end = datetime.strptime(slot['end'], '%H:%M').time()
+            if not slot:
+                continue
+            start = datetime.strptime(slot['start'], '%H:%M').time()
+            end = datetime.strptime(slot['end'], '%H:%M').time()
+
+            # 一般情況或跨日檢查
+            if end < start:  # 跨日營業
+                if arrival_time.time() >= start or arrival_time.time() <= end:
+                    matching_hours = f"{slot['start']}-{slot['end']} (跨日營業)"
+                    break
+            else:  # 一般情況
                 if start <= arrival_time.time() <= end:
-                    matching_hours = slot
+                    matching_hours = f"{slot['start']}-{slot['end']}"
                     break
 
         # 計算交通時段

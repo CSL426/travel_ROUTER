@@ -53,7 +53,7 @@ class GeoService:
         使用 Haversine 公式計算地球表面上兩點間的最短距離。
         這個方法總是可用，作為路線規劃的備用方案。
 
-        參數:
+        Args:
             point1: 第一個點的座標 {'lat': float, 'lon': float}
             point2: 第二個點的座標 {'lat': float, 'lon': float}
 
@@ -185,7 +185,7 @@ class GeoService:
         - 緯度：-90 到 90 度
         - 經度：-180 到 180 度
 
-        參數:
+        Args:
             lat: 緯度
             lon: 經度
 
@@ -209,7 +209,7 @@ class GeoService:
         2. 限制搜尋範圍來優化查詢
         3. 在地圖上顯示可行的活動範圍
 
-        參數:
+        Args:
             center: 中心點座標 {'lat': float, 'lon': float}
             radius_km: 半徑（公里）
 
@@ -256,7 +256,7 @@ class GeoService:
         這個方法先使用矩形範圍快速過濾，然後再精確計算距離，
         這種兩階段的策略可以大幅提升處理大量點的效能。
 
-        參數:
+        Args:
             center: 中心點座標 {'lat': float, 'lon': float}
             points: 所有待檢查的點的列表
             max_distance_km: 最大距離（公里）
@@ -305,7 +305,7 @@ class GeoService:
 
         將座標轉換為標準的字串格式，通常用於 API 呼叫或顯示。
 
-        參數:
+        Args:
             lat: 緯度
             lon: 經度
 
@@ -330,7 +330,7 @@ class GeoService:
         - "lat, lon"
         - "(lat,lon)"
 
-        參數:
+        Args:
             coord_str: 座標字串
 
         Returns:
