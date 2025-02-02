@@ -72,7 +72,7 @@ def handle_message(event):
         line_id = 'none_line_id'
     
     trip_db.record_user_input(line_id, text_message)
-
+    original_text_message = text_message
     user_Q = text_message[5:]
     text_message = text_message[0:4]
 
@@ -157,10 +157,13 @@ def handle_message(event):
                     )
                 )
 
-            elif text_message == "資料初始化":
+            elif original_text_message[0:5] == "資料初始化":
                 """
                 清除用戶所有資料
                 """
+                if len(original_text_message) > 5:
+                    line_id = original_text_message[5:].strip()
+                
                 success = trip_db.clear_user_data(line_id)
                 
                 message_text = "初始化成功" if success else "初始化錯誤，請稍後再試"

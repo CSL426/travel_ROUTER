@@ -3,6 +3,8 @@ from dotenv import load_dotenv
 from typing import Dict, List, Tuple
 from concurrent.futures import ThreadPoolExecutor
 
+import pandas as pd
+
 from feature.llm.LLM import LLM_Manager
 from feature.retrieval.qdrant_search import qdrant_search
 from feature.sql_csv.sql_csv import pandas_search
@@ -74,6 +76,7 @@ class TripController:
 
             # 6. 取得景點詳細資料
             location_details = self._get_places(placeIDs, unique_requirement)
+            location_details = self._add_duration(places=location_details)
 
             # 7. 規劃行程
             result = self._plan_trip(
@@ -139,8 +142,8 @@ class TripController:
             qdrant_obj = qdrant_search(
                 collection_name='view_restaurant',
                 config=self.config,
-                score_threshold=0.5,
-                limit=150
+                score_threshold=0.6,
+                limit=1000
             )
             # period_describe = [
             #     {'上午': '喜歡在文青咖啡廳裡享受幽靜且美麗的裝潢'},
@@ -196,6 +199,40 @@ class TripController:
             system_input=placeIDs,
             special_request_list=unique_requirement,
         )
+
+    def _add_duration(self, places: List[Dict]) -> List[Dict]:
+        """為地點加入停留時間資訊
+
+        Args:
+            places: List[Dict] - 地點列表
+
+        Returns:
+            List[Dict] - 加入duration後的地點列表
+        """
+        try:
+            # 讀取duration資料
+            duration_df = pd.read_csv('data\\emotion_analysis.csv')
+
+            # 建立查找字典
+            duration_dict = duration_df.set_index(
+                'placeID')['停留時間'].to_dict()
+
+            # 為每個地點加入duration
+            for place in places:
+                place_id = place.get('place_id')
+                if place_id in duration_dict:
+                    place['duration_min'] = int(duration_dict[place_id])
+                    place['label'] = place['label_type']
+                else:
+                    # 找不到資料時給預設值
+                    place['duration_min'] = 60
+
+            return places
+
+        except Exception as e:
+            print(f"加入duration資訊時發生錯誤: {str(e)}")
+            # 發生錯誤時返回原始資料
+            return places
 
     def _plan_trip(
         self,
@@ -350,7 +387,7 @@ if __name__ == "__main__":
         controller_instance = TripController(config)
 
         # test_input = "開車，想去台北文青的地方，吃午餐要便宜又好吃，下午想去逛有特色的景點，晚餐要可以跟朋友聚餐"
-        test_input = "不想去公園"
+        test_input = "重新規畫 想去酒吧"
         result = controller_instance.process_message(test_input)
         controller_instance.trip_planner.print_itinerary(result)
 

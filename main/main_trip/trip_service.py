@@ -35,7 +35,7 @@ def run_trip_planner(
 
 
 if __name__ == "__main__":
-    test_input = "2/2出發"
+    test_input = "資料初始化"
     result = run_trip_planner(
         text=test_input,
         line_id="test_user_id"
