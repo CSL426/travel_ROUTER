@@ -157,11 +157,13 @@ class BasePlanningStrategy:
 
         return selected_place, travel_info
 
-    def execute(self,
-                current_location: PlaceDetail,
-                available_places: List[PlaceDetail],
-                current_time: datetime,
-                previous_trip: List[Dict] = None) -> List[Dict]:
+    def execute(
+        self,
+        current_location: PlaceDetail,
+        available_places: List[PlaceDetail],
+        current_time: datetime,
+        previous_trip: List[Dict] = None
+    ) -> List[Dict]:
         """執行行程規劃
 
         這是策略的主要執行方法,負責:
@@ -418,11 +420,11 @@ class BasePlanningStrategy:
             # 一般情況或跨日檢查
             if end < start:  # 跨日營業
                 if arrival_time.time() >= start or arrival_time.time() <= end:
-                    matching_hours = f"{slot['start']}-{slot['end']} (跨日營業)"
+                    matching_hours = slot
                     break
             else:  # 一般情況
                 if start <= arrival_time.time() <= end:
-                    matching_hours = f"{slot['start']}-{slot['end']}"
+                    matching_hours = slot
                     break
 
         # 計算交通時段

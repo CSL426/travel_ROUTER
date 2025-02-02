@@ -46,11 +46,13 @@ class TripPlanningSystem:
         # 執行狀態追蹤
         self.execution_time = 0.0
 
-    def plan_trip(self,
-                  locations: List[Dict],
-                  requirement: Dict,
-                  previous_trip: List[Dict] = None,
-                  restart_index: int = None) -> List[Dict]:
+    def plan_trip(
+        self,
+        locations: List[Dict],
+        requirement: Dict,
+        previous_trip: List[Dict] = None,
+        restart_index: int = None
+    ) -> List[Dict]:
         """執行行程規劃
 
         Args:
@@ -70,10 +72,10 @@ class TripPlanningSystem:
 
             # 如果要從中間開始規劃
             if (previous_trip and
-                restart_index is not None and 
+                restart_index is not None and
                 restart_index > 0 and
-                restart_index <= len(previous_trip)):
-                
+                    restart_index <= len(previous_trip)):
+
                 # 取得之前行程的最後一個點
                 restart_point = previous_trip[restart_index-1]
                 # 修改開始時間
