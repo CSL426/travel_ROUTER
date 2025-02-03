@@ -55,6 +55,64 @@ app = Flask(__name__)
 configuration = Configuration(access_token=LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
 
+
+def create_rich_menu():
+    import requests
+    import io
+
+    from linebot.v3.messaging.models import (
+        RichMenuRequest,
+        RichMenuArea,
+        RichMenuBounds,
+        RichMenuSize,
+        MessageAction,
+    )
+    from PIL import Image, ImageDraw, ImageFont
+
+    api_client = ApiClient(configuration)
+    messaging_api = MessagingApi(api_client)
+
+    """創建 LINE 的圖文選單"""
+    rich_menu = RichMenuRequest(
+        size=RichMenuSize(width=2500, height=843),
+        selected=True,
+        name="Main Menu",
+        chat_bar_text="點擊開啟選單",
+        areas=[
+            RichMenuArea(
+                bounds=RichMenuBounds(x=0, y=0, width=1250, height=843),
+                action=MessageAction(text="我想進行情境搜索", label="情境搜索")
+            ),
+            RichMenuArea(
+                bounds=RichMenuBounds(x=1250, y=0, width=1250, height=843),
+                action=MessageAction(text="顯示我的收藏", label="我的收藏")
+            )
+        ]
+    )
+
+    rich_menu_id = messaging_api.create_rich_menu(rich_menu_request=rich_menu)
+    
+    # 創建選單圖片
+    img = Image.new('RGB', (2500, 843), '#ffffff')
+    draw = ImageDraw.Draw(img)
+    draw.text((625, 421), "情境搜索", fill='black', anchor='mm', font=ImageFont.truetype('mingliu.ttc', 120))
+    draw.text((1875, 421), "我的收藏", fill='black', anchor='mm', font=ImageFont.truetype('mingliu.ttc', 120))
+    
+    img_byte_arr = io.BytesIO()
+    img.save(img_byte_arr, format='PNG')
+    img_byte_arr = img_byte_arr.getvalue()
+    
+    url = f'https://api-data.line.me/v2/bot/richmenu/{rich_menu_id.rich_menu_id}/content'
+    headers = {
+        'Authorization': f'Bearer {LINE_CHANNEL_ACCESS_TOKEN}',
+        'Content-Type': 'image/png'
+    }
+    requests.post(url, headers=headers, data=img_byte_arr)
+    
+    messaging_api.set_default_rich_menu(rich_menu_id=rich_menu_id.rich_menu_id)
+create_rich_menu()
+
+
 @app.route("/callback", methods=['POST'])
 def callback():
     app.logger.info("Received webhook request")
