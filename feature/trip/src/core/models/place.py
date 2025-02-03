@@ -50,7 +50,6 @@ class PlaceDetail(BaseModel):
         ge=0,                # 不可為負數
         default=None,        # 先設為 None,讓 __init__ 處理預設值
         description="建議停留時間(分鐘)",
-        examples=[90, 120]
     )
 
     duration_min: Optional[int] = None
@@ -58,7 +57,6 @@ class PlaceDetail(BaseModel):
     label: str = Field(
         default="景點",
         description="地點類型標籤",
-        examples=["景點", "餐廳", "購物", "文化"]
     )
 
     period: str = Field(
@@ -90,44 +88,46 @@ class PlaceDetail(BaseModel):
         # 檢查是否有 duration 或 duration_min
         if 'duration' not in data and 'duration_min' in data:
             data['duration'] = data['duration_min']
+        elif 'duration' not in data:
+            data['duration'] = 60 # 預設60分鐘
 
-        # 如果都沒有,根據 label 設定預設值
-        if 'duration' not in data or data['duration'] is None:
-            if 'label' in data:
-                data['duration'] = self._get_default_duration(data['label'])
-            else:
-                data['duration'] = 60  # 最終預設值
+        # # 如果都沒有,根據 label 設定預設值
+        # if 'duration' not in data or data['duration'] is None:
+        #     if 'label' in data:
+        #         data['duration'] = self._get_default_duration(data['label'])
+        #     else:
+        #         data['duration'] = 60  # 最終預設值
 
         # 為了相容性,確保 duration_min 也有值
         data['duration_min'] = data['duration']
 
         super().__init__(**data)
 
-    @staticmethod
-    def _get_default_duration(label: str) -> int:
-        """根據地點類型取得預設停留時間
+    # @staticmethod
+    # def _get_default_duration(label: str) -> int:
+    #     """根據地點類型取得預設停留時間
 
-        Args:
-            label (str): 地點類型標籤
+    #     Args:
+    #         label (str): 地點類型標籤
 
-        Returns:
-            int: 預設停留時間(分鐘)
-        """
-        durations = {
-            # 正餐餐廳
-            '中菜館': 90,
-            '壽司店': 90,
-            '餐廳': 90,
-            # 快速餐飲
-            '快餐店': 45,
-            '麵店': 45,
-            # 景點
-            '景點': 120,
-            '旅遊景點': 120,
-            # 預設值
-            'default': 60
-        }
-        return durations.get(label, durations['default'])
+    #     Returns:
+    #         int: 預設停留時間(分鐘)
+    #     """
+    #     durations = {
+    #         # 正餐餐廳
+    #         '中菜館': 90,
+    #         '壽司店': 90,
+    #         '餐廳': 90,
+    #         # 快速餐飲
+    #         '快餐店': 45,
+    #         '麵店': 45,
+    #         # 景點
+    #         '景點': 120,
+    #         '旅遊景點': 120,
+    #         # 預設值
+    #         'default': 60
+    #     }
+    #     return durations.get(label, durations['default'])
 
     @field_validator('period')
     def validate_period(cls, v: str) -> str:
