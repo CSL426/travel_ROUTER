@@ -3,15 +3,13 @@ from datetime import datetime
 def First(data):
     current_date = datetime.now().strftime("%Y/%m/%d")
     
-    # 定義交通方式對應的圖示
     transport_icons = {
-        "大眾運輸": "🚌",
+        "大眾運輸": "🚄",
         "開車": "🚗",
-        "騎車": "🛵",
+        "騎自行車": "🚲",
         "步行": "🚶"
     }
     
-    # 定義顯示標題和時間的區塊
     location = {
         "type": "text",
         "text": "地點",
@@ -26,10 +24,10 @@ def First(data):
     }
     H = {
         "type": "text",
-        "text": "00:00",  # 改為單一時間點格式
+        "text": "00:00",
         "size": "sm",
         "spacing": "md",
-        "align": "start",
+        "align": "center",
         "flex": 2,
         "adjustMode": "shrink-to-fit",
         "color": "#666666",
@@ -42,26 +40,33 @@ def First(data):
         temp_loc['text'] = data[i]["name"]
         temp_H = H.copy()
         
-        # 根據位置決定顯示的時間格式
-        if i == 0:  # 起點
+        if i == 0:
             temp_H["text"] = data[i]['start_time']
-        elif i == len(data) - 1:  # 終點
-            temp_H["text"] = data[i]['end_time']
-        else:  # 中間點
-            temp_H["text"] = '-'.join([data[i]['start_time'], data[i]['end_time']])
+        elif i == len(data) - 1:
+            temp_H["text"] = " "+data[i]['end_time']
+        else:
+            temp_H["text"] = " "+'-'.join([data[i]['start_time'], data[i]['end_time']])
+
+        # 顯示下一個目的地的交通資訊
+        transport_info = {
+            "type": "box",
+            "layout": "horizontal",
+            "contents": [],
+            "height": "0px"
+        }
         
-        # 取得交通資訊（只為中間點準備）
-        is_middle_point = (i > 0 and i < len(data) - 1)
-        if is_middle_point:
-            transport_icon = transport_icons.get(data[i]['transport']['mode'], "🚗")
-            transport_time = data[i]['transport'].get('time', '15')
+        # 如果不是最後一個地點，顯示到下一個地點的交通資訊
+        if i < len(data) - 1:
+            next_point = data[i + 1]
+            transport_icon = transport_icons.get(next_point['transport']['mode'], "🚗")
+            transport_time = next_point['transport'].get('time', '15')
             transport_info = {
                 "type": "box",
                 "layout": "horizontal",
                 "contents": [
                     {
                         "type": "text",
-                        "text": f"{transport_icon}{transport_time}分鐘",
+                        "text": f"↓ {transport_icon} {transport_time}分鐘 ↓",
                         "size": "xs",
                         "color": "#888888",
                         "flex": 5
@@ -69,15 +74,7 @@ def First(data):
                 ],
                 "margin": "sm"
             }
-        else:
-            transport_info = {
-                "type": "box",
-                "layout": "horizontal",
-                "contents": [],
-                "height": "0px"
-            }
 
-        # 建立地點容器
         location_container = {
             "type": "box",
             "layout": "vertical",
@@ -105,13 +102,7 @@ def First(data):
                         }
                     ]
                 },
-                # 只為中間點添加交通資訊
-                transport_info if is_middle_point else {
-                    "type": "box",
-                    "layout": "horizontal",
-                    "contents": [],
-                    "height": "0px"
-                }
+                transport_info
             ],
             "paddingAll": "sm",
             "backgroundColor": "#FFFFFF",
@@ -199,7 +190,6 @@ def First(data):
         }
     }
 
-    # 地點列表容器
     cot = {
         "type": "box",
         "layout": "vertical",
@@ -210,7 +200,6 @@ def First(data):
 
     First_bubble['body']['contents'].append(cot)
 
-    # Footer 設定
     footer = {
         "type": "box",
         "layout": "horizontal",
