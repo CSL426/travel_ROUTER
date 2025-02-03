@@ -45,7 +45,7 @@ def thinking(data):
     contents = []
 
     # 迭代資料中的每個店鋪資料
-    for point in data[0].values():
+    for point in data:
 
          # 複製避免相互影響
         temp_loc = location.copy()
@@ -58,7 +58,7 @@ def thinking(data):
         temp_add['text'] = point.get("address", "地址")
         temp_rat["text"] = str(point.get("rating", "0.0"))
         temp_url["uri"] = point.get("location_url", "https://www.google.com/maps")
-        image = point["image_url"]
+        image = str(point.get("image_url", "https://example.com/default-image.jpg"))
         # 拼接每個店鋪的Bubble格式資料
         bubble = {
             "type": "bubble",  # 顯示為Bubble

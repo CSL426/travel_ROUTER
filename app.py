@@ -198,11 +198,15 @@ def handle_message(event):
                     }
                 ]
                 '''
-                data = recommandation(user_Q, config)
+                # 獲取推薦結果和查詢信息
+                results, query_info = recommandation(user_Q, config)
+                
+                # 更新 query_info 中的 line_user_id
+                query_info['line_user_id'] = line_id
                 
                 A2 = {
                     "type": "carousel",
-                    "contents": thinking(data)
+                    "contents": thinking(results)
                 }
 
                 flex_message = FlexMessage(
