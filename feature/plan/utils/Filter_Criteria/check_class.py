@@ -1,4 +1,4 @@
-def filter_by_label_type(points, desired_label):
+def filter_by_label_type(points, desired_label:str):
     """
     根據指定的 label_type 篩選  一般商店
                                 小吃
@@ -15,15 +15,36 @@ def filter_by_label_type(points, desired_label):
                                 咖啡廳
                                 一般商店
     
-    :restaurants: 地點列表，每個地點包含 placeID 和 label_type。 珣那包
-    :desired_label: 使用者想要的類型 (如 "伴手禮商店")。pon那包
+    :restaurants: 地點列表，每個地點包含 placeID 和 label_type  。 珣那包
+    :desired_label: '餐廳'|'咖啡廳'|'小吃'|'景點'               。pon那包
     :return: 符合條件的 placeID 列表。
     """
+
+    label_mapping = {
+        '餐廳': ['餐廳', '咖啡廳', '小吃'],
+        '咖啡廳': ['咖啡廳', '甜品店/飲料店'],
+        '小吃': ['小吃', '甜品店/飲料店'],
+        '景點': [
+            '一般商店',
+            '日用品商店',
+            '休閒設施',
+            '伴手禮商店',
+            '室內旅遊景點',
+            '室外旅遊景點',
+            '購物商場',
+            '文化/歷史景點',
+            '自然景點',
+            '一般商店',
+        ],
+    }
+
+
     matching_places = []
     for points in points:
         
         label = points.get("new_label_type")
-        if label == desired_label:
+        label_required = label_mapping[desired_label]
+        if label in label_required:
             matching_places.append(points['placeID'])
     return matching_places
 
@@ -44,7 +65,7 @@ if __name__ == "__main__":
         {
             "星期別": 1,
             "時間": "10:00",
-            "類別": "小吃",
+            "類別": "景點",
             "預算": 500,
             "出發地": (25.0478, 121.5171),
             "可接受距離門檻(KM)": 10,
