@@ -135,13 +135,11 @@ def handle_message(event):
                 ]
                 '''
                 data = run_trip_planner(text=user_Q, line_id=line_id)
-                
                 A1 = {
                     "type": "carousel",
                     "contents": [
                         First(data),
-                        Second(data),
-                        Third(data),
+                        Second(data)
                     ]
                 }
 
