@@ -6,6 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 from feature.retrieval.qdrant_search import qdrant_search
 
+
 @pytest.fixture
 def test_queries():
     """準備測試查詢資料"""
@@ -128,3 +129,7 @@ def test_performance_comparison(qdrant_client, test_queries):
     # 驗證兩種方法的結果是否一致
     assert set(single_results.keys()) == set(
         parallel_results.keys()), "兩種方法的結果應該要有相同的時段"
+
+
+if __name__ == "__main__":
+    pytest.main(["-v", "-s", __file__])

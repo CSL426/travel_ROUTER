@@ -12,6 +12,7 @@ setup(
         "feature.retrieval",
         "feature.llm",
         "feature.line",
+        "feature.nosql",
         "main",
         "main.main_trip",
         "main.main_plan",

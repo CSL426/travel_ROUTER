@@ -49,10 +49,10 @@ class NavigationTranslator:
     def clean_html(cls, text: str) -> str:
         """清理HTML標記
 
-        輸入參數:
+        Args:
             text: str - 包含HTML標記的文字
 
-        回傳:
+        Returns:
             str: 清理後的純文字
         """
         # 移除所有HTML標籤
@@ -65,10 +65,10 @@ class NavigationTranslator:
     def translate_instruction(cls, text: str) -> str:
         """轉換單一導航指令
 
-        輸入參數:
+        Args:
             text: str - 英文導航指令
 
-        回傳:
+        Returns:
             str: 中文導航指令
         """
         result = text
@@ -90,10 +90,10 @@ class NavigationTranslator:
     def format_distance(cls, distance: str) -> str:
         """格式化距離顯示
 
-        輸入參數:
+        Args:
             distance: str - 原始距離文字
 
-        回傳:
+        Returns:
             str: 格式化後的距離文字
         """
         return distance.replace('km', '公里').replace('m', '公尺')
@@ -102,10 +102,10 @@ class NavigationTranslator:
     def format_duration(cls, duration: str) -> str:
         """格式化時間顯示
 
-        輸入參數:
+        Args:
             duration: str - 原始時間文字
 
-        回傳:
+        Returns:
             str: 格式化後的時間文字
         """
         return duration.replace('mins', '分鐘').replace('min', '分鐘')
@@ -114,10 +114,10 @@ class NavigationTranslator:
     def format_navigation(cls, route_info: Dict) -> str:
         """格式化完整導航資訊
 
-        輸入參數:
+        Args:
             route_info: Dict - Google Maps API回傳的路線資訊
 
-        回傳:
+        Returns:
             str: 格式化後的中文導航說明
         """
         if not route_info or 'steps' not in route_info:

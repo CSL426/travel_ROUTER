@@ -1,6 +1,6 @@
 # run_planner.py
 
-from .src.core.planner import TripPlanningSystem
+from . import TripPlanningSystem
 from .sample_data import DEFAULT_LOCATIONS, DEFAULT_REQUIREMENT
 
 

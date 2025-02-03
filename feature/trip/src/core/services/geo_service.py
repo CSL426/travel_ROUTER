@@ -33,7 +33,7 @@ class GeoService:
         'driving': 40,    # 開車
         'transit': 30,    # 大眾運輸
         'walking': 5,     # 步行
-        'bicycling': 15   # 騎自行車
+        'bicycling': 15   # 騎車
     }
 
     def __init__(self):
@@ -53,11 +53,11 @@ class GeoService:
         使用 Haversine 公式計算地球表面上兩點間的最短距離。
         這個方法總是可用，作為路線規劃的備用方案。
 
-        參數:
+        Args:
             point1: 第一個點的座標 {'lat': float, 'lon': float}
             point2: 第二個點的座標 {'lat': float, 'lon': float}
 
-        回傳:
+        Returns:
             float: 兩點間的距離（公里）
 
         使用範例:
@@ -94,13 +94,13 @@ class GeoService:
                   departure_time: Optional[datetime] = None) -> Dict:
         """規劃兩點間的路線
 
-        輸入參數:
+        Args:
             origin: Dict - 起點座標 {'lat': float, 'lon': float}
             destination: Dict - 終點座標 {'lat': float, 'lon': float}
             mode: str - 交通方式('driving'/'transit'/'walking'/'bicycling')
             departure_time: Optional[datetime] - 出發時間，預設為當前時間
 
-        回傳:
+        Returns:
             Dict: {
                 'distance_km': float,     # 預估距離（公里）
                 'duration_minutes': int,   # 預估時間（分鐘）
@@ -185,11 +185,11 @@ class GeoService:
         - 緯度：-90 到 90 度
         - 經度：-180 到 180 度
 
-        參數:
+        Args:
             lat: 緯度
             lon: 經度
 
-        回傳:
+        Returns:
             bool: True 表示座標有效，False 表示無效
         """
         try:
@@ -209,11 +209,11 @@ class GeoService:
         2. 限制搜尋範圍來優化查詢
         3. 在地圖上顯示可行的活動範圍
 
-        參數:
+        Args:
             center: 中心點座標 {'lat': float, 'lon': float}
             radius_km: 半徑（公里）
 
-        回傳:
+        Returns:
             Dict: {
                 'min_lat': float,  # 最小緯度
                 'max_lat': float,  # 最大緯度
@@ -256,12 +256,12 @@ class GeoService:
         這個方法先使用矩形範圍快速過濾，然後再精確計算距離，
         這種兩階段的策略可以大幅提升處理大量點的效能。
 
-        參數:
+        Args:
             center: 中心點座標 {'lat': float, 'lon': float}
             points: 所有待檢查的點的列表
             max_distance_km: 最大距離（公里）
 
-        回傳:
+        Returns:
             List[Dict]: 在範圍內的點的列表，每個點包含原始資料和距離
 
         使用範例:
@@ -305,11 +305,11 @@ class GeoService:
 
         將座標轉換為標準的字串格式，通常用於 API 呼叫或顯示。
 
-        參數:
+        Args:
             lat: 緯度
             lon: 經度
 
-        回傳:
+        Returns:
             str: "緯度,經度" 格式的字串
 
         使用範例:
@@ -330,10 +330,10 @@ class GeoService:
         - "lat, lon"
         - "(lat,lon)"
 
-        參數:
+        Args:
             coord_str: 座標字串
 
-        回傳:
+        Returns:
             Optional[Dict]: 解析成功返回座標字典，失敗返回 None
 
         使用範例:
@@ -368,12 +368,12 @@ class GeoService:
                                          mode: str) -> Dict:
         """計算預估的交通資訊（不需要 API）
 
-        輸入參數:
+        Args:
             origin: 起點座標 {'lat': float, 'lon': float}
             destination: 終點座標 {'lat': float, 'lon': float}
             mode: 交通方式('driving'/'transit'/'walking'/'bicycling')
 
-        回傳:
+        Returns:
             Dict: {
                 'distance_km': float,     # 預估距離（公里）
                 'duration_minutes': int,   # 預估時間（分鐘）
@@ -402,10 +402,10 @@ class GeoService:
     def geocode(self, address: str) -> Dict[str, float]:
         """將地址或地點名稱轉換為座標
 
-        輸入參數:
+        Args:
             address: str - 地址或地點名稱
 
-        回傳:
+        Returns:
             Dict[str, float] - 包含經緯度的字典 {'lat': 緯度, 'lon': 經度}
 
         異常:
