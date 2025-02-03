@@ -3,6 +3,14 @@ from datetime import datetime
 def First(data):
     current_date = datetime.now().strftime("%Y/%m/%d")
     
+    # 定義交通方式對應的圖示
+    transport_icons = {
+        "大眾運輸": "🚌",
+        "開車": "🚗",
+        "騎車": "🛵",
+        "步行": "🚶"
+    }
+    
     # 定義顯示標題和時間的區塊
     location = {
         "type": "text",
@@ -18,7 +26,7 @@ def First(data):
     }
     H = {
         "type": "text",
-        "text": "00:00-00:00",
+        "text": "00:00",  # 改為單一時間點格式
         "size": "sm",
         "spacing": "md",
         "align": "start",
@@ -33,41 +41,84 @@ def First(data):
         temp_loc = location.copy()
         temp_loc['text'] = data[i]["name"]
         temp_H = H.copy()
-        temp_H["text"] = '-'.join([data[i]['start_time'], data[i]['end_time']])
+        
+        # 根據位置決定顯示的時間格式
+        if i == 0:  # 起點
+            temp_H["text"] = data[i]['start_time']
+        elif i == len(data) - 1:  # 終點
+            temp_H["text"] = data[i]['end_time']
+        else:  # 中間點
+            temp_H["text"] = '-'.join([data[i]['start_time'], data[i]['end_time']])
+        
+        # 取得交通資訊（只為中間點準備）
+        is_middle_point = (i > 0 and i < len(data) - 1)
+        if is_middle_point:
+            transport_icon = transport_icons.get(data[i]['transport']['mode'], "🚗")
+            transport_time = data[i]['transport'].get('time', '15')
+            transport_info = {
+                "type": "box",
+                "layout": "horizontal",
+                "contents": [
+                    {
+                        "type": "text",
+                        "text": f"{transport_icon}{transport_time}分鐘",
+                        "size": "xs",
+                        "color": "#888888",
+                        "flex": 5
+                    }
+                ],
+                "margin": "sm"
+            }
+        else:
+            transport_info = {
+                "type": "box",
+                "layout": "horizontal",
+                "contents": [],
+                "height": "0px"
+            }
 
-        cancel_button = {
-            "type": "text",
-            "text": "×",
-            "size": "md",
-            "color": "#FF6B6B",
-            "align": "center",
-            "action": {
-                "type": "postback",
-                "label": f"不要{data[i]['name']}",
-                "data": f"cancel_{data[i]['name']}"
-            },
-            "flex": 0,
-            "weight": "bold"
-        }
-
-        # 每個地點的容器
+        # 建立地點容器
         location_container = {
             "type": "box",
-            "layout": "horizontal",
-            "spacing": "lg",
-            "margin": "md",
+            "layout": "vertical",
             "contents": [
-                temp_H,
-                temp_loc,
-                cancel_button
+                {
+                    "type": "box",
+                    "layout": "horizontal",
+                    "spacing": "lg",
+                    "contents": [
+                        temp_H,
+                        temp_loc,
+                        {
+                            "type": "text",
+                            "text": "×",
+                            "size": "md",
+                            "color": "#FF6B6B",
+                            "align": "center",
+                            "action": {
+                                "type": "postback",
+                                "label": " ",
+                                "data": f"cancel_{data[i]['name']}"
+                            },
+                            "flex": 0,
+                            "weight": "bold"
+                        }
+                    ]
+                },
+                # 只為中間點添加交通資訊
+                transport_info if is_middle_point else {
+                    "type": "box",
+                    "layout": "horizontal",
+                    "contents": [],
+                    "height": "0px"
+                }
             ],
             "paddingAll": "sm",
             "backgroundColor": "#FFFFFF",
             "cornerRadius": "lg",
-            "borderWidth": "none",
-            "justifyContent": "space-between"
+            "borderWidth": "none"
         }
-
+        
         contents.append(location_container)
 
     First_bubble = {

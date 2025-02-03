@@ -138,8 +138,7 @@ def handle_message(event):
                 A1 = {
                     "type": "carousel",
                     "contents": [
-                        First(data),
-                        Second(data)
+                        First(data)
                     ]
                 }
 
