@@ -59,7 +59,6 @@ handler = WebhookHandler(LINE_CHANNEL_SECRET)
 def create_rich_menu():
     import requests
     import io
-
     from linebot.v3.messaging.models import (
         RichMenuRequest,
         RichMenuArea,
@@ -68,10 +67,13 @@ def create_rich_menu():
         MessageAction,
     )
     from PIL import Image, ImageDraw, ImageFont
-
+    import os
     api_client = ApiClient(configuration)
     messaging_api = MessagingApi(api_client)
-
+    script_dir = os.path.dirname(os.path.abspath(__file__))  # 獲取當前腳本的目錄
+    font_path = os.path.join(script_dir, 'fonts', 'mingliu.ttc')  # 字型檔案的相對路徑
+    # 使用相對路徑加載字型
+    font = ImageFont.truetype(font_path, 120)
     """創建 LINE 的圖文選單"""
     rich_menu = RichMenuRequest(
         size=RichMenuSize(width=2500, height=843),
@@ -95,8 +97,8 @@ def create_rich_menu():
     # 創建選單圖片
     img = Image.new('RGB', (2500, 843), '#ffffff')
     draw = ImageDraw.Draw(img)
-    draw.text((625, 421), "情境搜索", fill='black', anchor='mm', font=ImageFont.truetype('mingliu.ttc', 120))
-    draw.text((1875, 421), "我的收藏", fill='black', anchor='mm', font=ImageFont.truetype('mingliu.ttc', 120))
+    draw.text((625, 421), "情境搜索", fill='black', anchor='mm', font=font)
+    draw.text((1875, 421), "我的收藏", fill='black', anchor='mm', font=font)
     
     img_byte_arr = io.BytesIO()
     img.save(img_byte_arr, format='PNG')
@@ -570,4 +572,4 @@ def handle_message(event):
 
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=8787)
+    app.run(debug=False,host="0.0.0.0", port=8080)
