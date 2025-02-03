@@ -214,6 +214,15 @@ def handle_recommendation_message(event):
     user_id = event.source.user_id
 
     if event.message.text == "我想進行情境搜索":
+
+        # 初始化 MongoDB 管理器
+        mongodb_obj = MongoDBManage_unsatisfied(config)
+        
+        # 清除該用戶之前的記錄
+        mongodb_obj.delete_user_record(user_id)
+        mongodb_obj.close()
+        
+        # 設定用戶狀態為等待查詢
         user_states[user_id] = "waiting_for_query"
         messaging_api.reply_message(
             ReplyMessageRequest(
@@ -221,7 +230,6 @@ def handle_recommendation_message(event):
                 messages=[TextMessage(text="請輸入你的需求(例如:請推薦我淡水好吃的餐廳)")]
             )
         )
-        return
 
     elif user_id in user_states and user_states[user_id] == "waiting_for_query":
         while event.message.text in ['顯示我的收藏','推薦其他店家'] or event.message.text[0:4] == '收藏店家'or event.message.text[0:2] == '移除':
@@ -383,6 +391,7 @@ def handle_recommendation_message(event):
             )
         )
             
+        # 處理再推薦的部分
     elif event.message.text == "推薦其他店家":
         try:
             # 1. 從 recent_recommendations 中獲取當前的推薦結果
@@ -431,7 +440,12 @@ def handle_recommendation_message(event):
                         mongodb_obj.update_query_info(query_info)
 
             # 7. 重新運算推薦結果
-            final_results = rerun_rec(query_info, config)
+            final_results, query_info = rerun_rec(query_info, config)
+            
+            from pprint import pprint
+            print('========================')
+            pprint(final_results, sort_dicts=False)
+            print('========================')
 
             # 8. 轉換並更新推薦結果
             transformed_data = transform_location_data(final_results)

@@ -25,7 +25,7 @@ class MongoDBManage_unsatisfied:
     mongo_manager.update_blacklist("Uxxxx", ["place1", "place2", ...])
     
     # 比對用戶查詢是否相同
-    is_same = mongo_manager.compare_query(query_info)
+    mongo_manager.compare_query(query_info)
     
     # 更新用戶查詢資訊
     mongo_manager.update_query_info(query_info)
@@ -33,25 +33,18 @@ class MongoDBManage_unsatisfied:
     # 獲取用戶所有記錄
     user_records = mongo_manager.get_user_records("Uxxxx")
     
+    #刪除用戶所有紀錄
+    delete_user_record(line_user_id)
     # 關閉連接
     mongo_manager.close()
     ```
-    
-    功能說明：
-    1. check_user_exists: 檢查特定用戶是否存在於資料庫中
-    2. add_unsatisfied: 新增用戶的不滿意記錄
-    3. update_blacklist: 更新用戶的黑名單列表
-    4. compare_query: 比對用戶當前查詢與資料庫中的查詢是否相同
-    5. update_query_info: 更新用戶的查詢資訊
-    6. test_connection: 測試資料庫連接狀態
-    7. get_user_records: 獲取指定用戶的所有記錄
     '''
     
     def __init__(self, config: Dict[str, str]):
         """初始化MongoDB連接"""
         self.mongodb_uri = config.get("MONGODB_URI")
         if not self.mongodb_uri:
-            raise ValueError("MongoDB URI is required in config")
+            raise ValueError("MongoDB URI在設定中是必要的")
             
         self.client = MongoClient(self.mongodb_uri, server_api=ServerApi('1'))
         self.db = self.client.travel_router
@@ -59,81 +52,89 @@ class MongoDBManage_unsatisfied:
         
         # 創建索引以提高查詢效率
         self.unsatisfied_collection.create_index([("line_user_id", 1)])
-        self.unsatisfied_collection.create_index([("timestamp", -1)])
+
+    def test_connection(self) -> bool:
+        """測試數據庫連接是否正常"""
+        try:
+            self.client.admin.command('ping')
+            return True
+        except Exception as e:
+            print(f"連接錯誤: {e}")
+            return False
 
     def add_unsatisfied(self, query_info: Dict[str, Any]) -> bool:
         """
         新增用戶的不滿意記錄
         
-        Args:
-            query_info: 包含所有查詢相關信息的字典
+        參數:
+            query_info: 包含所有查詢相關資訊的字典
             
-        Returns:
+        回傳:
             bool: 新增是否成功
         """
         try:
             # 將 black_list 轉換為 list，因為 MongoDB 不支援 set 類型
-            query_info["black_list"] = list(set(query_info.get("black_list", [])))
+            query_info["black_list"] = list(query_info.get("black_list", []))
             
             # 插入文檔
             self.unsatisfied_collection.insert_one(query_info)
             return True
             
         except Exception as e:
-            print(f"Error adding unsatisfied record: {e}")
+            print(f"新增不滿意記錄時發生錯誤: {e}")
             return False
 
     def update_blacklist(self, line_user_id: str, place_ids: List[str]) -> bool:
         """
-        更新用戶最新記錄的黑名單
+        更新用戶的黑名單
         
-        Args:
+        參數:
             line_user_id: Line用戶ID
-            place_ids: 要加入黑名單的地點ID列表（10個推薦地點）
+            place_ids: 要加入黑名單的地點ID列表
             
-        Returns:
+        回傳:
             bool: 更新是否成功
         """
         try:
-            # 找到該用戶最新的記錄
-            latest_record = self.unsatisfied_collection.find_one(
-                {"line_user_id": line_user_id},
-                sort=[("_id", -1)]  # 使用_id排序，因為_id包含時間信息
+            # 找到該用戶的記錄
+            user_record = self.unsatisfied_collection.find_one(
+                {"line_user_id": line_user_id}
             )
             
-            if not latest_record:
-                print(f"No record found for user {line_user_id}")
+            if not user_record:
+                print(f"找不到用戶 {line_user_id} 的記錄")
                 return False
             
             # 更新黑名單
             result = self.unsatisfied_collection.update_one(
-                {"_id": latest_record["_id"]},
+                {"line_user_id": line_user_id},
                 {"$addToSet": {"black_list": {"$each": place_ids}}}
             )
             
             success = result.modified_count > 0
             if success:
-                print(f"Successfully updated blacklist for user {line_user_id}")
+                print(f"成功更新用戶 {line_user_id} 的黑名單")
             else:
-                print(f"No changes made to blacklist for user {line_user_id}")
+                print(f"用戶 {line_user_id} 的黑名單無變化")
                 
             return success
             
         except Exception as e:
-            print(f"Error updating blacklist: {e}")
+            print(f"更新黑名單時發生錯誤: {e}")
             return False
+
     def compare_query(self, query_info: Dict[str, Any]) -> bool:
         """
         比對用戶輸入的query和資料庫中已存在的query是否相同
         
-        Args:
-            query_info: 包含查詢相關資訊的字典，必須包含 line_user_id 和 query 欄位
+        參數:
+            query_info: 包含查詢相關資訊的字典
             
-        Returns:
+        回傳:
             bool: 如果查詢相同返回True，否則返回False
         """
         try:
-            # 從query_info中獲取必要資訊
+            # 獲取必要資訊
             line_user_id = query_info["line_user_id"]
             new_query = query_info["query"]
             
@@ -153,37 +154,26 @@ class MongoDBManage_unsatisfied:
             print(f"比對查詢時發生錯誤: {e}")
             return False
 
-    def test_connection(self) -> bool:
-        """測試數據庫連接是否正常"""
-        try:
-            self.client.admin.command('ping')
-            return True
-        except Exception as e:
-            print(f"Connection error: {e}")
-            return False
     def update_query_info(self, query_info: Dict[str, Any]) -> bool:
         """
-        使用新的 query_info 覆蓋更新資料庫中對應用戶的記錄
+        使用新的 query_info 完整覆蓋更新用戶的記錄
         
-        Args:
-            query_info: 包含查詢相關資訊的字典，必須包含 line_user_id
+        參數:
+            query_info: 包含完整查詢資訊的字典
             
-        Returns:
+        回傳:
             bool: 更新是否成功
         """
         try:
-            # 從query_info中獲取用戶ID
             line_user_id = query_info["line_user_id"]
             
-            # 使用 replace_one 進行完整替換
-            # upsert=True 表示如果記錄不存在則創建新記錄
-            result = self.unsatisfied_collection.replace_one(
+            # 直接用新的 query_info 替換舊記錄
+            result = self.unsatisfied_collection.update_one(
                 {"line_user_id": line_user_id},
-                query_info,
-                upsert=True
+                {"$set": query_info},
+                upsert=True  # 如果不存在則創建新記錄
             )
             
-            # 檢查更新是否成功
             success = result.modified_count > 0 or result.upserted_id is not None
             if success:
                 print(f"成功更新用戶 {line_user_id} 的查詢記錄")
@@ -195,18 +185,18 @@ class MongoDBManage_unsatisfied:
         except Exception as e:
             print(f"更新查詢記錄時發生錯誤: {e}")
             return False
+
     def check_user_exists(self, line_user_id: str) -> bool:
         """
         檢查用戶是否存在於資料庫中
         
-        Args:
+        參數:
             line_user_id: Line用戶ID
             
-        Returns:
+        回傳:
             bool: 用戶是否存在
         """
         try:
-            # 查詢是否存在該用戶的記錄
             result = self.unsatisfied_collection.find_one(
                 {"line_user_id": line_user_id}
             )
@@ -216,24 +206,25 @@ class MongoDBManage_unsatisfied:
         except Exception as e:
             print(f"檢查用戶存在時發生錯誤: {e}")
             return False
+
     def get_user_records(self, line_user_id: str) -> List[Dict[str, Any]]:
         """
         獲取指定用戶的所有記錄
         
-        Args:
+        參數:
             line_user_id: Line用戶ID
             
-        Returns:
-            List[Dict[str, Any]]: 該用戶的所有記錄列表，如果沒有記錄則返回空列表
+        回傳:
+            List[Dict[str, Any]]: 該用戶的所有記錄列表
         """
         try:
-            # 查詢該用戶的所有記錄並轉換為列表
+            # 查詢該用戶的記錄
             records = list(self.unsatisfied_collection.find(
                 {"line_user_id": line_user_id}
             ))
             
             if records:
-                # 將 _id 轉換為字符串，因為 ObjectId 不能直接序列化
+                # 將 _id 轉換為字符串
                 for record in records:
                     record['_id'] = str(record['_id'])
                 return records
@@ -243,25 +234,52 @@ class MongoDBManage_unsatisfied:
         except Exception as e:
             print(f"獲取用戶記錄時發生錯誤: {e}")
             return []
+
+    def delete_user_record(self, line_user_id: str) -> bool:
+        """
+        刪除指定用戶的所有記錄
         
+        參數:
+            line_user_id: Line用戶ID
+                
+        回傳:
+            bool: 刪除是否成功
+        """
+        try:
+            # 刪除該用戶的所有記錄
+            result = self.unsatisfied_collection.delete_many(
+                {"line_user_id": line_user_id}
+            )
+            
+            success = result.deleted_count > 0
+            if success:
+                print(f"成功刪除用戶 {line_user_id} 的所有記錄")
+            else:
+                print(f"用戶 {line_user_id} 無記錄可刪除")
+                
+            return success
+            
+        except Exception as e:
+            print(f"刪除用戶記錄時發生錯誤: {e}")
+            return False    
     def close(self):
         """關閉數據庫連接"""
         self.client.close()
 
 
-# 使用示例
+# 測試用例
 if __name__ == "__main__":
+    # 載入環境變量
     config = dotenv_values(".env")
     
     try:
         mongodb_obj = MongoDBManage_unsatisfied(config)
         
         if mongodb_obj.test_connection():
-            print("Successfully connected to MongoDB!")
+            print("成功連接到 MongoDB!")
             
             # 測試新增記錄
             test_query_info = {
-                "_id": "Re_202501200800",
                 "line_user_id": "U123456789",
                 "query": "推薦台北咖啡廳",
                 "query_of_llm": "用戶想找一間環境舒適的咖啡廳",
@@ -277,12 +295,12 @@ if __name__ == "__main__":
             }
             
             if mongodb_obj.add_unsatisfied(test_query_info):
-                print("Successfully added record!")
+                print("成功新增記錄!")
                 
                 # 測試更新黑名單
                 test_place_ids = [f"place{i}" for i in range(1, 11)]
                 if mongodb_obj.update_blacklist("U123456789", test_place_ids):
-                    print("Successfully updated blacklist!")
+                    print("成功更新黑名單!")
                 
     finally:
         mongodb_obj.close()

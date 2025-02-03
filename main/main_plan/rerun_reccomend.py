@@ -41,8 +41,16 @@ def rerun_rec(query_info: Dict[str, Any], config: Dict[str, str]) -> List[Dict[s
         query_info["user_requirement"],
         weights
     )
-    
-    return final_results
+    query_info = {
+        "line_user_id": query_info["line_user_id"],  # 預留給Line用戶ID
+        "query": query_info["query"],  # 用戶輸入的搜索語句
+        "query_of_llm": query_info["query_of_llm"],  # LLM分析的語句
+        "special_requirement": query_info["special_requirement"],  # 特殊需求字典
+        "user_requirement": query_info["user_requirement"],  # 用戶需求字典
+        "black_list": list(query_info["black_list"])  # 初始化空的黑名單集合
+    }
+    print("重跑成功")
+    return final_results, query_info
 
 if __name__ == "__main__":
     from pprint import pprint
