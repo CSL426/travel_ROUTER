@@ -150,7 +150,7 @@ def handle_message(event):
 
     try:
         with ApiClient(configuration) as api_client:
-            line_bot_api = MessagingApi(api_client)
+            messaging_api = MessagingApi(api_client)
             
             if text_message == "旅遊推薦":
                 # 預設的旅遊推薦資料
@@ -207,13 +207,10 @@ def handle_message(event):
                 ]
                 '''
                 data = run_trip_planner(text=user_Q, line_id=line_id)
-                
                 A1 = {
                     "type": "carousel",
                     "contents": [
-                        First(data),
-                        Second(data),
-                        Third(data),
+                        First(data)
                     ]
                 }
 
@@ -222,7 +219,7 @@ def handle_message(event):
                     contents=FlexContainer.from_dict(A1)
                 )
 
-                line_bot_api.reply_message_with_http_info(
+                messaging_api.reply_message_with_http_info(
                     ReplyMessageRequest(
                         reply_token=event.reply_token,
                         messages=[flex_message]
@@ -240,20 +237,21 @@ def handle_message(event):
                 
                 message_text = "初始化成功" if success else "初始化錯誤，請稍後再試"
                 
-                line_bot_api.reply_message_with_http_info(
+                messaging_api.reply_message_with_http_info(
                     ReplyMessageRequest(
                         reply_token=event.reply_token,
                         messages=[TextMessage(text=message_text)]
                     )
                 )
 
+
     except Exception as e:
         app.logger.error(f"Error handling message: {str(e)}")
         # 發生錯誤時，嘗試傳送錯誤訊息給使用者
         try:
             with ApiClient(configuration) as api_client:
-                line_bot_api = MessagingApi(api_client)
-                line_bot_api.reply_message_with_http_info(
+                messaging_api = MessagingApi(api_client)
+                messaging_api.reply_message_with_http_info(
                     ReplyMessageRequest(
                         reply_token=event.reply_token,
                         messages=[TextMessage(text="處理訊息時發生錯誤，請稍後再試")]
@@ -262,9 +260,7 @@ def handle_message(event):
         except Exception as inner_e:
             app.logger.error(f"Error sending error message: {str(inner_e)}")
 
-
-@handler.add(MessageEvent, message=TextMessageContent)
-def handle_recommendation_message(event):
+    # ======================================================以下是情境搜索
     api_client = ApiClient(configuration)
     messaging_api = MessagingApi(api_client)
 
@@ -575,3 +571,4 @@ def handle_recommendation_message(event):
 
 if __name__ == "__main__":
     app.run(debug=False, host="0.0.0.0", port=8787)
+
