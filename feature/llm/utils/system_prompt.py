@@ -123,23 +123,6 @@ summarize_history = """
 範例: ["用戶偏好文青風景點,不想去吵雜的地方,午餐預算500內,希望10點開始行程。"]
 """
 
-store_recommend = """
-                    根據用戶需求，判斷出用戶最有可能會想去的前三家店，並用以下格式輸出:
-                        {{
-                        placeID: {"name": "店名",
-                                    "rating": float,
-                                    "address": str,
-                                    "url": ""},
-                        placeID: {"name": "店名",
-                                    "rating": float,
-                                    "address": str,
-                                    "url": ""},
-                        placeID: {"name": "店名",
-                                    "rating": float,
-                                    "address": str,
-                                    "url": ""}
-                        }}
-                """
 Cloud_A = """
             根據用戶需求,生成一句簡短的敘述來形容使用者的喜好,形容客戶喜好的敘述,並使用下列格式輸出:
             [""] 

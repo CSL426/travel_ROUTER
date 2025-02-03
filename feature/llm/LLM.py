@@ -127,13 +127,6 @@ class LLM_Manager:
 
             return Cloud
 
-    def store_fun(self, user_input):
-        result = self.__Query(system_prompt.store_recommend,
-                              user_input, "List[Dict]")
-        Store = result
-        return Store
-
-
 
 if __name__ == "__main__":
     from pprint import pprint
@@ -145,8 +138,19 @@ if __name__ == "__main__":
     LLM_obj = LLM_Manager(ChatGPT_api_key)
 
     # 呼叫 Thinking 和 Cloud 的並行處理函數
-    user_input = "文青咖啡廳"
     user_input = "想去台北文青的地方，吃午餐要便宜又好吃，下午想去逛有特色的景點，晚餐要可以跟朋友聚餐"
+    
+    
+    # ====================================================
     results = LLM_obj.Thinking_fun(user_input)
-    # results = LLM_obj.Cloud_fun(user_input)
+    print('======旅遊推薦======')
+    print(f'input query = {user_input}\n')
     pprint(results, sort_dicts=False)
+    print('\n\n')
+
+    # ====================================================
+    results = LLM_obj.Cloud_fun(user_input)
+    print('======情境搜索======')
+    print(f'input query = {user_input}\n')
+    pprint(results, sort_dicts=False)
+    
