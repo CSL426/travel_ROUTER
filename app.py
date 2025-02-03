@@ -239,7 +239,7 @@ def handle_recommendation_message(event):
             # 執行推薦
             final_results, query_info = recommandation(event.message.text, config)
             from pprint import pprint
-            pprint(final_results)
+            pprint(final_results, sort_dicts=False)
 
 
             # 儲存查詢資訊
