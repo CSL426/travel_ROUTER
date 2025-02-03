@@ -34,8 +34,8 @@ def recommandation(user_Q: str, config: Dict[str, str]) -> Tuple[List[Dict[str, 
     qdrant_obj = qdrant_search(
         collection_name='view_restaurant',
         config=config,
-        score_threshold=0.5,
-        limit=30,
+        score_threshold=0.6,
+        limit=1000,
     )
     vector_results = qdrant_obj.cloud_search(cloud_description)
     

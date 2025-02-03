@@ -26,11 +26,12 @@ def plan_system(system_input: list[dict], special_request_list):
     
     # 製造 points
     points = []
+    ETL_dataframe = ETL_dataframe_generate()
     for placeID in placeID_list:
         point = plan_point_make(
                                 place_ID=placeID,
                                 retrival_score=system_input[0][placeID]['分數'],
-                                ETL_dataframe=ETL_dataframe_generate(),
+                                ETL_dataframe=ETL_dataframe,
                             )
         points.append(point)
 
