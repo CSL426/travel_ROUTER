@@ -231,29 +231,28 @@ def handle_recommendation_message(event):
                 messages=[TextMessage(text="請重新輸入你的需求(例如:請推薦我淡水好吃的餐廳)")]
                 )
             )
-            
+
         try:
             # 清除用戶狀態
             del user_states[user_id]
             
             # 執行推薦
             final_results, query_info = recommandation(event.message.text, config)
-            
+            from pprint import pprint
+            pprint(final_results)
+
+
             # 儲存查詢資訊
             query_info["line_user_id"] = user_id
             user_queries[user_id] = query_info
 
-            print("原始推薦結果:", final_results)
-
             # 轉換資料格式並儲存
             transformed_data = transform_location_data(final_results)
             recent_recommendations[user_id] = transformed_data
-            print("轉換後的資料:", transformed_data)
-            
+
             # 生成 Flex 消息
             flex_messages = generate_flex_messages(transformed_data)
-            print("Flex消息:", flex_messages)
-            
+
             flex_message = FlexMessage(
                 alt_text="為您推薦以下地點",
                 contents=FlexContainer.from_dict(flex_messages)
