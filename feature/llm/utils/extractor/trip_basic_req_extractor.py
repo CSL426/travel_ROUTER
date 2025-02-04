@@ -5,7 +5,7 @@ from feature.llm.utils.extractor.format_valid.format_valid import (
 )
 
 def trip_basic_req_extractor(basic_req:list[dict], debuger: bool=False):
-    
+    basic_req = basic_req[0]
     try:
         extract_basic_req = [{
             '出發時間': str(basic_req['出發時間']) if is_valid_24_hour_time(basic_req['出發時間']) else '09:00',
@@ -20,8 +20,10 @@ def trip_basic_req_extractor(basic_req:list[dict], debuger: bool=False):
             '預算': basic_req['預算'] if is_float(basic_req['預算']) else 'none',
             '出發日': str(basic_req['出發日']) if is_valid_mm_dd(basic_req['出發日']) else 'none',
         }]
+        print('========客戶基本要求llm 經過認證，除了"出發地點"及"結束地點"，其他格式無誤========')
     except:
         # 預設值
+        print('========客戶基本要llm 錯誤, 客戶基本要求使用預設值========')
         extract_basic_req = [{
             '出發時間': '09:00',
             '結束時間': '21:00',
@@ -61,19 +63,3 @@ if __name__ == "__main__":
 
     trip_basic_req_extractor(basic_req, debuger=True)
 
-
-    # ----------------is_valid_24_hour_time 測試---------------------
-    # print(is_valid_24_hour_time("00:00"))  # True
-    # print(is_valid_24_hour_time("23:59"))  # True
-    # print(is_valid_24_hour_time("24:00"))  # True
-    # print(is_valid_24_hour_time("24:01"))  # False
-    # print(is_valid_24_hour_time("12:60"))  # False
-    # print(is_valid_24_hour_time("-01:30")) # False
-
-
-    # ----------------測試 mm-dd 日期格式-------------------------------------------
-    # print(is_valid_mm_dd("01-01"))  # True
-    # print(is_valid_mm_dd("12-31"))  # True
-    # print(is_valid_mm_dd("02-30"))  # False
-    # print(is_valid_mm_dd("13-01"))  # False
-    # print(is_valid_mm_dd("00-10"))  # False
