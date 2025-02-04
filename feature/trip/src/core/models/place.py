@@ -1,11 +1,12 @@
 # src/core/models/place.py
 
-from typing import List, Dict, Optional, Union
-from pydantic import BaseModel, Field, field_validator
+from typing import Any, List, Dict, Optional, Union
+import pandas as pd
+from pydantic import BaseModel, Field, field_validator, model_validator
 from datetime import datetime
 
 from ..services.time_service import TimeService
-from ..utils.validator import TripValidator
+from ..utils.validator import TripValidator, ValidationError
 
 
 class PlaceDetail(BaseModel):
@@ -49,7 +50,6 @@ class PlaceDetail(BaseModel):
         ge=0,                # 不可為負數
         default=None,        # 先設為 None,讓 __init__ 處理預設值
         description="建議停留時間(分鐘)",
-        examples=[90, 120]
     )
 
     duration_min: Optional[int] = None
@@ -57,7 +57,6 @@ class PlaceDetail(BaseModel):
     label: str = Field(
         default="景點",
         description="地點類型標籤",
-        examples=["景點", "餐廳", "購物", "文化"]
     )
 
     period: str = Field(
@@ -65,7 +64,7 @@ class PlaceDetail(BaseModel):
         examples=["morning", "lunch", "afternoon", "dinner", "night"]
     )
 
-    hours: Dict[int, List[Optional[Dict[str, str]]]] = Field(
+    hours: Dict[int, Optional[Any]] = Field(
         description="""營業時間資訊，格式：
         {
             1: [{'start': '09:00', 'end': '17:00'}],  # 週一
@@ -78,7 +77,7 @@ class PlaceDetail(BaseModel):
         - 支援跨日營業時間(例如夜市)
         """
     )
-    
+
     url: Optional[str] = Field(
         default=None,
         description="地點的導航連結",
@@ -89,44 +88,46 @@ class PlaceDetail(BaseModel):
         # 檢查是否有 duration 或 duration_min
         if 'duration' not in data and 'duration_min' in data:
             data['duration'] = data['duration_min']
+        elif 'duration' not in data:
+            data['duration'] = 60 # 預設60分鐘
 
-        # 如果都沒有,根據 label 設定預設值
-        if 'duration' not in data or data['duration'] is None:
-            if 'label' in data:
-                data['duration'] = self._get_default_duration(data['label'])
-            else:
-                data['duration'] = 60  # 最終預設值
+        # # 如果都沒有,根據 label 設定預設值
+        # if 'duration' not in data or data['duration'] is None:
+        #     if 'label' in data:
+        #         data['duration'] = self._get_default_duration(data['label'])
+        #     else:
+        #         data['duration'] = 60  # 最終預設值
 
         # 為了相容性,確保 duration_min 也有值
         data['duration_min'] = data['duration']
 
         super().__init__(**data)
 
-    @staticmethod
-    def _get_default_duration(label: str) -> int:
-        """根據地點類型取得預設停留時間
+    # @staticmethod
+    # def _get_default_duration(label: str) -> int:
+    #     """根據地點類型取得預設停留時間
 
-        輸入參數:
-            label (str): 地點類型標籤
+    #     Args:
+    #         label (str): 地點類型標籤
 
-        回傳:
-            int: 預設停留時間(分鐘)
-        """
-        durations = {
-            # 正餐餐廳
-            '中菜館': 90,
-            '壽司店': 90,
-            '餐廳': 90,
-            # 快速餐飲
-            '快餐店': 45,
-            '麵店': 45,
-            # 景點
-            '景點': 120,
-            '旅遊景點': 120,
-            # 預設值
-            'default': 60
-        }
-        return durations.get(label, durations['default'])
+    #     Returns:
+    #         int: 預設停留時間(分鐘)
+    #     """
+    #     durations = {
+    #         # 正餐餐廳
+    #         '中菜館': 90,
+    #         '壽司店': 90,
+    #         '餐廳': 90,
+    #         # 快速餐飲
+    #         '快餐店': 45,
+    #         '麵店': 45,
+    #         # 景點
+    #         '景點': 120,
+    #         '旅遊景點': 120,
+    #         # 預設值
+    #         'default': 60
+    #     }
+    #     return durations.get(label, durations['default'])
 
     @field_validator('period')
     def validate_period(cls, v: str) -> str:
@@ -136,15 +137,65 @@ class PlaceDetail(BaseModel):
             raise ValueError(f'無效的時段標記: {v}')
         return v
 
-    @field_validator('hours')
-    def validate_hours(cls, v: Dict) -> Dict:
-        """驗證營業時間格式"""
-        try:
-            # 使用新的驗證器
-            TripValidator.validate_business_hours(v)
-            return v
-        except ValueError as e:
-            raise ValueError(f"營業時間格式錯誤: {str(e)}")
+    @field_validator('label')
+    def validate_label(cls, v):
+        """驗證label格式"""
+        if pd.isna(v):  # 檢查是否為NaN
+            return "未分類"
+        return str(v)  # 確保轉換為字串
+
+    @model_validator(mode='before')
+    def validate_hours(cls, values: Dict) -> Dict:
+        """前處理驗證
+
+        特殊規則:
+        1. 如果hours完全沒有資料 -> 全部24小時營業
+        2. 如果1-7都是None或'none' -> 全部24小時營業  
+        3. 如果部分天數有資料 -> 沒設定的視為休息(None)
+        """
+        if 'hours' not in values:
+            values['hours'] = {i: [{'start': '00:00', 'end': '23:59'}]
+                               for i in range(1, 8)}
+            return values
+
+        hours = values['hours']
+
+        # 檢查是否全部都是None或'none'
+        all_closed = True
+        for day in range(1, 8):
+            value = hours.get(day)
+            if value not in [None, 'none', []]:
+                all_closed = False
+                break
+
+        if all_closed:
+            # 全部都是None -> 改成24小時
+            values['hours'] = {i: [{'start': '00:00', 'end': '23:59'}]
+                               for i in range(1, 8)}
+            return values
+
+        # 處理每一天
+        processed = {}
+        for day in range(1, 8):
+            if day not in hours:
+                processed[day] = None
+                continue
+
+            value = hours[day]
+            if value in [None, 'none', []]:
+                processed[day] = None
+            else:
+                if not isinstance(value, list):
+                    value = [value]
+                value = [
+                    slot if isinstance(slot, dict) else {
+                        'start': slot['start'], 'end': slot['end']}
+                    for slot in value
+                ]
+                processed[day] = value
+
+        values['hours'] = processed
+        return values
 
     @field_validator('lat', 'lon')
     def validate_coordinates(cls, v: float, field: str) -> float:
@@ -160,15 +211,15 @@ class PlaceDetail(BaseModel):
     def calculate_distance(self, other: Union['PlaceDetail', Dict]) -> float:
         """計算與另一個地點的距離
 
-        輸入:
+        Args:
             other: 另一個地點
                 - 可以是 PlaceDetail 物件
                 - 或包含 lat/lon 的字典
 
-        回傳:
+        Returns:
             float: 兩點間距離(公里)
 
-        使用範例:
+        Examlpes:
             >>> place1 = PlaceDetail(...)
             >>> place2 = PlaceDetail(...)
             >>> distance = place1.calculate_distance(place2)
@@ -202,26 +253,45 @@ class PlaceDetail(BaseModel):
     def is_open_at(self, day: int, time_str: str) -> bool:
         """檢查指定時間是否在營業時間內
 
-        輸入:
+        Args:
             day: 1-7 代表週一到週日
             time_str: "HH:MM" 格式時間
+
+        Returns:
+            bool: True表示營業中,False表示不營業
         """
-        if day not in self.hours:
+        # 檢查該天是否有營業時間設定
+        if not self.hours or day not in self.hours:
             return False
 
+        # 檢查時段是否有效
         time_slots = self.hours[day]
-        if not time_slots or time_slots[0] is None:
+        if not time_slots or not isinstance(time_slots, list):
             return False
 
         check_time = datetime.strptime(
-            time_str, TimeService.TIME_FORMAT).time()
+            time_str,
+            TimeService.TIME_FORMAT
+        ).time()
 
         for slot in time_slots:
-            if slot is None:
+            if not slot or not isinstance(slot, dict):
                 continue
 
-            start, end = TimeService.parse_time_range(
-                slot['start'], slot['end'])
+            # 確保slot有start和end
+            if 'start' not in slot or 'end' not in slot:
+                continue
+
+            try:
+                start = datetime.strptime(
+                    slot['start'], TimeService.TIME_FORMAT
+                ).time()
+                end = datetime.strptime(
+                    slot['end'], TimeService.TIME_FORMAT
+                ).time()
+            except ValueError:
+                continue
+
             if TimeService.is_time_in_range(check_time, start, end, allow_overnight=True):
                 return True
 
@@ -237,10 +307,10 @@ class PlaceDetail(BaseModel):
         - 晚餐時間前後一小時是晚餐行程
         - 晚餐後是晚上行程
 
-        輸入:
+        Args:
             current_time (datetime): 要檢查的時間
 
-        回傳:
+        Returns:
             bool: True 表示適合，False 表示不適合
         """
         from ..services.time_service import TimeService
@@ -259,11 +329,11 @@ class PlaceDetail(BaseModel):
     def get_next_available_time(self, current_day: int, current_time: str) -> Optional[Dict]:
         """取得下一個營業時間
 
-        輸入:
+        Args:
             current_day: 1-7代表週一到週日
             current_time: "HH:MM"格式時間
 
-        回傳:
+        Returns:
             Dict: {
                 'day': int,
                 'start': str,

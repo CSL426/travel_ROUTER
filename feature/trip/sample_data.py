@@ -24,10 +24,10 @@ DEFAULT_REQUIREMENT = [{
 def process_csv(filepath: str) -> pd.DataFrame:
     """處理景點資料的CSV檔案
 
-    輸入:
+    Args:
         filepath (str): CSV檔案路徑
 
-    輸出:
+    Returns:
         pd.DataFrame: 處理後的資料框架，包含以下欄位:
         - name: 景點名稱
         - rating: 評分(float)
@@ -96,10 +96,10 @@ def get_duration_by_label(label: str) -> int:
 def convert_to_place_list(df: pd.DataFrame) -> List[Dict]:
     """將DataFrame轉換為地點列表
 
-    輸入:
+    Args:
         df: 包含地點資料的DataFrame
 
-    輸出:
+    Returns:
         List[Dict]: 地點資料列表，依照時段分類整理
     """
     places = []
@@ -135,10 +135,10 @@ def convert_to_place_list(df: pd.DataFrame) -> List[Dict]:
 def sort_places_by_period(places: List[Dict]) -> List[Dict]:
     """依照時段對地點進行分類排序
 
-    輸入:
+    Args:
         places: 地點列表
 
-    輸出:
+    Returns:
         List[Dict]: 依照時段排序後的地點列表
     """
     # 定義時段順序

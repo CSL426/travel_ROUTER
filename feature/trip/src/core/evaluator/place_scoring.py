@@ -31,48 +31,101 @@ class PlaceScoring:
     4. 時段適合度 - 判斷是否在合適的時間前往
     """
 
-    def __init__(self, time_service: TimeService, geo_service: GeoService):
+    # 分數正規化範圍
+    MIN_SCORE = 0.0
+    MAX_SCORE = 1.0
+
+    # 新增不同交通方式的距離門檻(公里)
+    DISTANCE_THRESHOLDS = {
+        'driving': 30,
+        'transit': 10,
+        'walking': 2,
+        'bicycling': 5
+    }
+
+    # 效率評分的基準值
+    EFFICIENCY_BASE = 1.5  # 基準效率比率
+    EFFICIENCY_RATIOS = {
+        '景點': 0.8,    # 景點可接受較低效率
+        '主要景點': 0.8,
+        '餐廳': 1.2,    # 餐廳要求較高效率
+        '小吃': 1.2
+    }
+
+    def __init__(
+        self,
+        time_service:             TimeService,
+        geo_service: GeoService,
+        travel_mode: str = 'driving',
+        weights: ScoreWeights = None
+    ):
+        """初始化評分系統
+
+        Args:
+            time_service: TimeService - 時間服務
+            geo_service: GeoService - 地理服務 
+            travel_mode: str - 交通方式
+            weights: ScoreWeights - 評分權重(選填)
+        """
         self.time_service = time_service
         self.geo_service = geo_service
-        self.weights = ScoreWeights()
+        self.travel_mode = travel_mode
+        self.weights = weights or ScoreWeights()
 
-        # 評分的基準值設定
-        self.efficiency_base = 1.5   # 效率評分的基準值
-        self.min_score = 0.0        # 最低評分
-        self.max_score = 1.0        # 最高評分
+        # 設定距離門檻
+        self.distance_threshold = self.DISTANCE_THRESHOLDS.get(
+            travel_mode,
+            self.DISTANCE_THRESHOLDS['driving']
+        )
 
-    def calculate_score(self,
-                        place: PlaceDetail,
-                        current_location: PlaceDetail,
-                        current_time: datetime,
-                        travel_time: float) -> float:
+    def calculate_score(
+        self,
+        place: PlaceDetail,
+        current_location: PlaceDetail,
+        current_time: datetime,
+        travel_time: float
+    ) -> float:
         """計算地點的綜合評分
 
-        整合所有評分因素，產生一個最終評分：
-        1. 先檢查基本條件（如營業時間）
-        2. 計算各個維度的分數
-        3. 根據權重進行加權平均
-        4. 若地點完全不適合，回傳負無限大
+        Args:
+            place: PlaceDetail - 要評分的地點
+            current_location: PlaceDetail - 當前位置 
+            current_time: datetime - 當前時間
+            travel_time: float - 預估交通時間(分鐘)
 
-        參數：
-            place: 要評分的地點
-            current_location: 當前位置
-            current_time: 當前時間
-            travel_time: 預估交通時間（分鐘）
-
-        回傳：
-            float: 0-1 之間的評分，或 float('-inf') 表示不適合
+        Returns:
+            float: 評分結果,營業時間無效時返回負無限大
         """
         # 檢查營業時間
         if not self._check_business_hours(place, current_time):
             return float('-inf')
 
-        # 計算各維度的分數
+        # 計算距離
+        distance = self.geo_service.calculate_distance(
+            {'lat': current_location.lat, 'lon': current_location.lon},
+            {'lat': place.lat, 'lon': place.lon}
+        )
+
+        # 調整距離門檻
+        adjusted_threshold = self.distance_threshold
+        if place.label in ['景點', '主要景點']:
+            adjusted_threshold *= 1.2
+        elif place.label in ['餐廳', '小吃']:
+            adjusted_threshold *= 0.8
+
+        # 計算距離分數
+        if distance <= adjusted_threshold:
+            # 在門檻內,線性計算分數
+            distance_score = 1.0 - (distance / adjusted_threshold)
+        else:
+            # 超過門檻,快速遞減分數
+            over_ratio = (distance - adjusted_threshold) / adjusted_threshold
+            distance_score = max(0.0, 0.5 - over_ratio)
+
+        # 計算其他維度分數
         rating_score = self._calculate_rating_score(place)
         efficiency_score = self._calculate_efficiency_score(place, travel_time)
         time_slot_score = self._calculate_time_slot_score(place, current_time)
-        distance_score = self._calculate_distance_score(
-            place, current_location)
 
         # 計算加權平均
         weighted_score = (
@@ -93,10 +146,10 @@ class PlaceScoring:
         - 若沒有評分資料，給予中等分數避免完全排除該地點
         - 線性轉換確保分數分布合理
 
-        參數：
+        Args:
             place: 要評分的地點
 
-        回傳：
+        Returns:
             float: 0-1 之間的標準化評分
         """
         if not place.rating:
@@ -120,12 +173,12 @@ class PlaceScoring:
         - 對不同類型的地點有不同的期望值（如景點可以接受較長的交通時間）
         - 確保時間投入有合理的回報
 
-        參數：
-            place: 要評分的地點
-            travel_time: 預估交通時間（分鐘）
+        Args:
+            place: PlaceDetail - 要評分的地點
+            travel_time: float - 預估交通時間(分鐘)
 
-        回傳：
-            float: 0-1 之間的效率分數
+        Returns:
+            float: 0-1之間的效率分數
         """
         if travel_time <= 0:
             return 1.0  # 如果就在當前位置，給予最高分
@@ -134,47 +187,62 @@ class PlaceScoring:
         efficiency_ratio = place.duration_min / travel_time
 
         # 根據地點類型調整期望效率
-        expected_ratio = self.efficiency_base
-        if place.label in ['景點', '主要景點']:
-            expected_ratio *= 0.8  # 景點可以接受較低的效率
-        elif place.label in ['餐廳', '小吃']:
-            expected_ratio *= 1.2  # 用餐地點要求較高效率
+        expected_ratio = self.EFFICIENCY_BASE * \
+            self.EFFICIENCY_RATIOS.get(place.label, 1.0)
 
         # 標準化評分
         score = min(1.0, efficiency_ratio / expected_ratio)
         return max(0.0, score)
 
-    def _calculate_distance_score(self, place: PlaceDetail, current_location: PlaceDetail) -> float:
-        """計算距離合理性分數
+    # def _calculate_distance_score(
+    #     self,
+    #     place: PlaceDetail,
+    #     current_location: PlaceDetail,
+    #     travel_mode: str = 'driving'
+    # ) -> float:
+    #     """計算距離合理性分數
 
-        這個方法評估地點與當前位置的距離是否合理。它會：
-        - 為不同類型的地點設定不同的距離標準
-        - 主要景點可以接受較遠的距離
-        - 餐飲地點要求較近距離
+    #     根據交通方式調整評分:
+    #     1. 計算實際距離
+    #     2. 取得對應交通方式的門檻
+    #     3. 根據距離比例計算分數
 
-        參數:
-            place: 要評分的地點
-            current_location: 當前位置
+    #     Args:
+    #         place: PlaceDetail - 要評分的地點
+    #         current_location: PlaceDetail - 當前位置
+    #         travel_mode: str - 交通方式
 
-        回傳:
-            float: 0-1 之間的距離分數，越近分數越高
-        """
-        # 計算實際距離
-        distance = self.geo_service.calculate_distance(
-            {'lat': current_location.lat, 'lon': current_location.lon},
-            {'lat': place.lat, 'lon': place.lon}
-        )
+    #     Returns:
+    #         float: 0-1之間的距離分數,距離越近分數越高
+    #     """
+    #     # 計算實際距離
+    #     distance = self.geo_service.calculate_distance(
+    #         {'lat': current_location.lat, 'lon': current_location.lon},
+    #         {'lat': place.lat, 'lon': place.lon}
+    #     )
 
-        # 根據地點類型調整可接受距離
-        max_distance = 30.0  # 預設最大可接受距離（公里）
-        if place.label in ['景點', '主要景點']:
-            max_distance *= 1.2  # 景點可以接受較遠的距離
-        elif place.label in ['餐廳', '小吃']:
-            max_distance *= 0.8  # 餐飲地點要求較近
+    #     # 取得該交通方式的距離門檻
+    #     threshold = self.DISTANCE_THRESHOLDS.get(
+    #         travel_mode,
+    #         self.DISTANCE_THRESHOLDS['driving']
+    #     )
 
-        # 計算距離分數（線性遞減）
-        score = 1.0 - (distance / max_distance)
-        return max(0.0, min(1.0, score))
+    #     # 根據地點類型調整可接受距離
+    #     if place.label in ['景點', '主要景點']:
+    #         threshold *= 1.2  # 景點可以接受較遠的距離
+    #     elif place.label in ['餐廳', '小吃']:
+    #         threshold *= 0.8  # 餐飲地點要求較近
+
+    #     # 計算距離分數（線性遞減）
+    #     if distance <= threshold:
+    #         # 在門檻內,線性計算分數
+    #         score = 1.0 - (distance / threshold)
+    #     else:
+    #         # 超過門檻,快速遞減分數
+    #         over_ratio = (distance - threshold) / threshold
+    #         score = max(0.0, 0.5 - over_ratio)  # 超過門檻越多分數越低
+
+    #     return max(0.0, min(1.0, score))
 
     def _calculate_time_slot_score(self, place: PlaceDetail, current_time: datetime) -> float:
         """計算時段適合度分數
@@ -184,11 +252,11 @@ class PlaceScoring:
         - 與建議時段的時間差距
         - 營業時間的剩餘時間
 
-        參數：
+        Args:
             place: 要評分的地點
             current_time: 當前時間
 
-        回傳：
+        Returns:
             float: 0-1 之間的時段適合度分數
         """
         # 取得當前時段
@@ -216,20 +284,33 @@ class PlaceScoring:
 
         使用地點的營業時間資訊來判斷當前是否營業。
 
-        參數：
+        Args:
             place: 要檢查的地點
             current_time: 要檢查的時間
 
-        回傳：
-            bool: True 表示營業中，False 表示不營業
+        Returns:
+            bool: True 表示營業中,False 表示不營業
         """
         weekday = current_time.isoweekday()  # 1-7 代表週一到週日
         time_str = current_time.strftime(self.time_service.TIME_FORMAT)
 
-        # 使用地點的 is_open_at 方法檢查營業狀態
+        # 檢查hours是否存在且有效
+        if not place.hours or weekday not in place.hours:
+            return False
+
+        # 檢查該天的營業時段
+        slots = place.hours[weekday]
+        if not slots or not isinstance(slots, list):
+            return False
+
+        # 使用place的is_open_at方法檢查營業狀態
         return place.is_open_at(weekday, time_str)
 
-    def _evaluate_business_hours_fit(self, place: PlaceDetail, current_time: datetime) -> float:
+    def _evaluate_business_hours_fit(
+        self,
+        place: PlaceDetail,
+        current_time: datetime
+    ) -> float:
         """評估營業時間的適合度
 
         不僅檢查地點是否營業，還評估：
@@ -237,27 +318,32 @@ class PlaceScoring:
         - 是否有足夠的遊玩時間
         - 當前是否處於營業的黃金時段
 
-        參數:
+        Args:
             place: 要評分的地點
             current_time: 當前時間
 
-        回傳:
+        Returns:
             float: 0-1 之間的適合度分數
         """
         weekday = current_time.isoweekday()
         time_str = current_time.strftime(self.time_service.TIME_FORMAT)
 
         # 先檢查是否營業
-        is_open = place.is_open_at(weekday, time_str)
-        if not is_open:
+        if not self._check_business_hours(place, current_time):
             return 0.0
+        # is_open = place.is_open_at(weekday, time_str)
+        # if not is_open:
+        #     return 0.0
 
         # 檢查剩餘營業時間
         slots = place.hours.get(weekday, [])
+        if not slots or not isinstance(slots, list):
+            return 0.0
+
         best_score = 0.0  # 取多個時段中的最佳分數
 
         for slot in slots:
-            if slot is None:
+            if not slot or not isinstance(slot, dict):
                 continue
 
             current_slot_score = self._calculate_slot_score(
@@ -269,18 +355,20 @@ class PlaceScoring:
 
         return best_score
 
-    def _calculate_slot_score(self,
-                              current_time: datetime,
-                              slot: Dict[str, str],
-                              duration_min: int) -> float:
+    def _calculate_slot_score(
+        self,
+        current_time: datetime,
+        slot: Dict[str, str],
+        duration_min: int
+    ) -> float:
         """計算單一時段的適合度分數
 
-        參數:
+        Args:
             current_time: 當前時間
             slot: 營業時段資訊
             duration_min: 預計停留時間
 
-        回傳:
+        Returns:
             float: 0-1 之間的分數
         """
         # 解析結束時間
@@ -310,15 +398,10 @@ class PlaceScoring:
     def _normalize_score(self, score: float) -> float:
         """標準化評分到合理範圍
 
-        確保最終評分落在有效範圍內（0-1），同時：
-        - 避免極端值
-        - 保持評分的相對關係
-        - 讓分數分布更合理
+        Args:
+            score: float - 原始評分
 
-        參數:
-            score: 原始評分
-
-        回傳:
-            float: 標準化後的評分（0-1之間）
+        Returns:
+            float: 標準化後的評分(0-1之間)
         """
-        return max(self.min_score, min(self.max_score, score))
+        return max(self.MIN_SCORE, min(self.MAX_SCORE, score))

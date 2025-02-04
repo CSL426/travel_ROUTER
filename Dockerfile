@@ -1,29 +1,33 @@
-# 使用 Python 3.12 作為基礎鏡像
+# gunicorn需要先載入並更新requirements.txt
+
 FROM python:3.12-slim
 
-# 設置工作目錄
 WORKDIR /app
 
-# 安裝 Poetry
+# 安裝必要的系統依賴，包括 fontconfig
+RUN apt-get update && apt-get install -y fontconfig
+
+# 安裝 poetry
 RUN pip install --no-cache-dir poetry
 
-# 複製 Poetry 的設定檔和 pyproject.toml 檔案
-COPY pyproject.toml poetry.lock /app/
+# 複製所有檔案
+COPY . .
 
-# 安裝專案依賴，使用 Poetry
+# 拷貝字型檔案到容器中的適當目錄
+COPY data/fonts/mingliu.ttc /app/data/fonts/mingliu.ttc
+
+# 安裝 Python 依賴
 RUN poetry install --no-interaction --no-ansi --no-root
+RUN poetry add gunicorn==23.0.0
 
-# 複製應用程式檔案
-COPY . /app/
-
-# 設置環境變數 (可選)
+# 設定環境變數
 ENV PYTHONUNBUFFERED=1
 
-# 設置環境變數 PORT 為 5000 (本地開發端口)
+# 為 Cloud Run 設定動態端口
 ENV PORT=8080
 
-# 暴露應用端口
-EXPOSE 8080
+# 暴露端口
+EXPOSE ${PORT}
 
-# 設置容器啟動命令，使用 Poetry 來執行應用程式
-CMD ["poetry", "run", "python", "app.py"]
+# 使用 gunicorn 執行應用程式
+CMD exec poetry run gunicorn --workers=2 --threads=8 --timeout=0 --bind=:${PORT} app:app

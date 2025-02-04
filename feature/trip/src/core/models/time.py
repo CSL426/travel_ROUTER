@@ -42,10 +42,10 @@ class TimeSlot(BaseModel):
     def contains(self, check_time: datetime) -> bool:
         """檢查指定時間是否在此時間區間內
 
-        輸入參數：
+        輸入Args:
             check_time (datetime): 要檢查的時間點
 
-        回傳：
+        Returns:
             bool: True 表示在區間內，False 表示在區間外
         """
         return TripValidator.validate_time_string(check_time.strftime('%H:%M'))

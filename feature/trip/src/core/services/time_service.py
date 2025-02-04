@@ -24,7 +24,7 @@ class TimeService:
     def __init__(self, lunch_time: str = "12:00", dinner_time: str = "18:00"):
         """初始化時間服務
 
-        輸入參數:
+        Args:
             lunch_time: str - 中餐時間,格式 "HH:MM" 
             dinner_time: str - 晚餐時間,格式 "HH:MM"
         """
@@ -48,10 +48,10 @@ class TimeService:
         3. afternoon -> dinner: 到達晚餐時間  
         4. dinner -> night: 完成晚餐
 
-        輸入參數:
+        Args:
             current_time: datetime - 要判斷的時間點
 
-        回傳:
+        Returns:
             str - 時段名稱('morning'/'lunch'/'afternoon'/'dinner'/'night')
         """
 
@@ -88,7 +88,7 @@ class TimeService:
 
         只有在正確的用餐時段選擇餐廳時才更新狀態
 
-        輸入參數:
+        Args:
             place_period: str - 地點的時段類型('lunch'/'dinner')
         """
         if place_period == 'lunch' and self.current_period == 'lunch':
@@ -115,10 +115,10 @@ class TimeService:
         這是內部使用的方法，用於統一時間字串的解析邏輯。
         支援 24 小時制的時間格式（HH:MM）。
 
-        參數:
+        Args:
             time_str: HH:MM 格式的時間字串
 
-        回傳:
+        Returns:
             time: 解析後的 time 物件，如果輸入無效則回傳 None
         """
         if not time_str:
@@ -136,11 +136,11 @@ class TimeService:
 
         使用 _parse_time 來解析開始和結束時間。
 
-        參數:
+        Args:
             start_time: 開始時間 (HH:MM格式)
             end_time: 結束時間 (HH:MM格式)
 
-        回傳:
+        Returns:
             Tuple[time, time]: (開始時間, 結束時間)
 
         異常:
@@ -165,10 +165,10 @@ class TimeService:
         1. HH:MM 格式的 24 小時制時間
         2. 特殊值 "none"（表示未設定時間）
 
-        參數:
+        Args:
             time_str: 要驗證的時間字串
 
-        回傳:
+        Returns:
             bool: True 表示格式正確，False 表示格式錯誤
 
         使用範例:
@@ -192,12 +192,12 @@ class TimeService:
         檢查開始時間和結束時間是否構成有效的時間範圍。
         可以處理跨日的情況（如夜市營業時間）。
 
-        參數:
+        Args:
             start_time: 開始時間（HH:MM 格式）
             end_time: 結束時間（HH:MM 格式）
             allow_overnight: 是否允許跨日，預設為 False
 
-        回傳:
+        Returns:
             bool: True 表示有效的時間範圍
 
         使用範例:
@@ -225,13 +225,13 @@ class TimeService:
         - dinner: 晚餐時段
         - night: 晚上（晚餐後）
 
-        參數:
+        Args:
             check_time: 要判斷的時間，可以是：
                      - datetime 物件
                      - time 物件
                      - HH:MM 格式的時間字串
 
-        回傳:
+        Returns:
             str: 時段名稱
 
         使用範例:
@@ -292,11 +292,11 @@ class TimeService:
         這個內部方法用來處理時間的加減運算。它能正確處理跨日的情況，
         例如當我們需要計算午夜前後的時間區間。
 
-        參數:
+        Args:
             base_time: 基準時間
             minutes: 要增加的分鐘數（可以是負數）
 
-        回傳:
+        Returns:
             time: 計算後的新時間
         """
         # 先轉換為 datetime 以便計算
@@ -316,7 +316,7 @@ class TimeService:
         確保整個遊玩時段都在營業時間內。它也能處理特殊的營業時間安排，
         例如午休時間或是分段營業。
 
-        參數:
+        Args:
             current_time: 當前時間（datetime物件或HH:MM格式字串）
             hours: 營業時間設定，格式為：
                   {
@@ -326,7 +326,7 @@ class TimeService:
                   }
             duration_minutes: 預計停留時間（分鐘）
 
-        回傳:
+        Returns:
             Tuple[bool, Optional[int]]: 
             - 第一個值表示是否在營業時間內
             - 第二個值表示可停留時間（分鐘），若不在營業時間內則為None
@@ -393,13 +393,13 @@ class TimeService:
     def is_time_in_range(cls, check_time: time, start: time, end: time, allow_overnight: bool = False) -> bool:
         """檢查時間是否在指定範圍內
 
-        參數:
+        Args:
             check_time: 要檢查的時間
             start: 開始時間
             end: 結束時間
             allow_overnight: 是否允許跨日(例如夜市營業時間)
 
-        回傳:
+        Returns:
             bool: True表示在範圍內
         """
         if allow_overnight and end < start:
@@ -414,11 +414,11 @@ class TimeService:
 
         用於計算一般情況下（非跨日）的時間差。
 
-        參數:
+        Args:
             start: 開始時間
             end: 結束時間
 
-        回傳:
+        Returns:
             int: 分鐘數
         """
         start_dt = datetime.combine(datetime.today(), start)
@@ -430,11 +430,11 @@ class TimeService:
 
         處理營業時間跨越午夜的特殊情況，例如從晚上10點營業到隔天上午5點。
 
-        參數:
+        Args:
             start: 開始時間
             end: 結束時間（隔天）
 
-        回傳:
+        Returns:
             int: 分鐘數
         """
         start_dt = datetime.combine(datetime.today(), start)
@@ -450,12 +450,12 @@ class TimeService:
         這個方法可以判斷兩個時間區間是否有重疊的部分，例如用來檢查兩個行程是否衝突。
         它能處理一般的時間區間，也支援跨日的情況（如夜市營業時間）。
 
-        參數:
+        Args:
             interval1: 第一個時間區間 (開始時間, 結束時間)
             interval2: 第二個時間區間 (開始時間, 結束時間)
             allow_overnight: 是否允許跨日判斷，預設為 False
 
-        回傳:
+        Returns:
             bool: True 表示有重疊，False 表示無重疊
 
         使用範例:
@@ -496,12 +496,12 @@ class TimeService:
         當目前時間不在營業時間內時，這個方法會幫助找出最近的可用時段。
         它會考慮預計停留時間，確保找到的時段足夠容納整個行程。
 
-        參數:
+        Args:
             current_time: 當前時間（datetime物件或HH:MM格式字串）
             business_hours: 營業時間設定
             duration_minutes: 需要的時間長度（分鐘）
 
-        回傳:
+        Returns:
             Dict: 包含以下資訊的字典：
                 {
                     'day': int,          # 星期幾（1-7）
@@ -581,12 +581,12 @@ class TimeService:
         計算從當前時間到目標時間需要等待的分鐘數。
         這個內部方法支援跨日期的等待時間計算。
 
-        參數:
+        Args:
             current_dt: 當前時間
             target_dt: 目標日期
             target_time: 目標時間
 
-        回傳:
+        Returns:
             int: 需要等待的分鐘數
         """
         target_dt = datetime.combine(target_dt.date(), target_time)
