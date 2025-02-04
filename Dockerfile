@@ -1,3 +1,5 @@
+# gunicorn需要先載入並更新requirements.txt
+
 FROM python:3.12-slim
 
 WORKDIR /app
@@ -12,16 +14,19 @@ RUN pip install --no-cache-dir poetry
 COPY . .
 
 # 拷貝字型檔案到容器中的適當目錄
-COPY fonts/mingliu.ttc /app/fonts/mingliu.ttc
+COPY data/fonts/mingliu.ttc /app/data/fonts/mingliu.ttc
 
 # 安裝 Python 依賴
 RUN poetry install --no-interaction --no-ansi --no-root
 
 # 設定環境變數
 ENV PYTHONUNBUFFERED=1
+
+# 為 Cloud Run 設定動態端口
 ENV PORT=8080
 
-EXPOSE 8080
+# 暴露端口
+EXPOSE ${PORT}
 
-# 執行命令
-CMD ["poetry", "run", "python", "app.py"]
+# 使用 gunicorn 執行應用程式
+CMD exec poetry run gunicorn --workers=2 --threads=8 --timeout=0 --bind=:${PORT} app:app

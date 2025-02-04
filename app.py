@@ -71,7 +71,7 @@ def create_rich_menu():
     api_client = ApiClient(configuration)
     messaging_api = MessagingApi(api_client)
     script_dir = os.path.dirname(os.path.abspath(__file__))  # 獲取當前腳本的目錄
-    font_path = os.path.join(script_dir, 'fonts', 'mingliu.ttc')  # 字型檔案的相對路徑
+    font_path = os.path.join(script_dir, 'data/fonts', 'mingliu.ttc')  # 字型檔案的相對路徑
     # 使用相對路徑加載字型
     font = ImageFont.truetype(font_path, 120)
     """創建 LINE 的圖文選單"""
