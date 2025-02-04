@@ -452,7 +452,6 @@ def handle_recommendation_message(event):
         # 處理再推薦的部分
     elif event.message.text == "推薦其他店家":
         try:
-            # 1. 從 recent_recommendations 中獲取當前的推薦結果
             transformed_data = recent_recommendations.get(user_id, {})
             if not transformed_data:
                 messaging_api.reply_message(
@@ -463,69 +462,49 @@ def handle_recommendation_message(event):
                 )
                 return
 
-            # 2. 獲取所有推薦地點的 ID
+            # 取得目前要加入 black_list 的 place_ids
             place_ids = list(transformed_data.keys())
+            
+            # 修改 mongodb 操作部分
+            mongodb_obj = MongoDBManage_unsatisfied(config)
+            try:
+                mongodb_obj.test_connection()
+                original_query = user_queries.get(user_id, {}) #定位到最新的query_info
+                query_info = enrich_query(original_query, place_ids) #將再推薦的place id丟進去
+                if not mongodb_obj.check_user_exists(user_id): #判斷line_user
+                    mongodb_obj.add_unsatisfied(query_info)
+                else:
+                    mongodb_obj.update_blacklist(user_id, place_ids)
 
-            # 3. 從 user_queries 獲取原始查詢信息
-            original_query = user_queries.get(user_id)
-            if not original_query:
+                print(f"Original black list count:{len(original_query["black_list"])}")
+                print(f"Complete black list count:{len(query_info["black_list"])}")
+                print(f"Place IDs being added: {place_ids}")
+
+                # 重新執行推薦
+                final_results = rerun_rec(query_info, config)
+
+                transformed_data = transform_location_data(final_results)
+                
+                recent_recommendations[user_id] = transformed_data
+                user_records = mongodb_obj.get_user_records(user_id)  # 返回 List[Dict]
+                user_queries[user_id] = user_records[0]  # 取出唯一的 Dict
+
+
+                flex_messages = generate_flex_messages(transformed_data)
+                flex_message = FlexMessage(
+                    alt_text="為您推薦其他地點",
+                    contents=FlexContainer.from_dict(flex_messages)
+                )
+                
                 messaging_api.reply_message(
                     ReplyMessageRequest(
                         reply_token=event.reply_token,
-                        messages=[TextMessage(text="無法找到原始查詢信息")]
+                        messages=[flex_message]
                     )
                 )
-                return
 
-            # 4. 使用 enrich_query 更新查詢信息
-            query_info = enrich_query(original_query, user_id, place_ids)
-
-            # 5. 初始化 MongoDB 管理器
-            mongodb_obj = MongoDBManage_unsatisfied(config)
-
-            # 6. 檢查用戶是否存在並進行相應操作
-            if mongodb_obj.test_connection():
-                if not mongodb_obj.check_user_exists(user_id):
-                    # 新用戶，添加記錄
-                    mongodb_obj.add_unsatisfied(query_info)
-                else:
-                    # 已存在的用戶，比較查詢
-                    if mongodb_obj.compare_query(query_info):
-                        # 相同查詢，更新黑名單
-                        mongodb_obj.update_blacklist(user_id, place_ids)
-                    else:
-                        # 不同查詢，更新查詢信息
-                        mongodb_obj.update_query_info(query_info)
-
-            # 7. 重新運算推薦結果
-            final_results, query_info = rerun_rec(query_info, config)
-            
-            from pprint import pprint
-            print('========================')
-            pprint(final_results, sort_dicts=False)
-            print('========================')
-
-            # 8. 轉換並更新推薦結果
-            transformed_data = transform_location_data(final_results)
-            recent_recommendations[user_id] = transformed_data
-
-            # 9. 生成新的 Flex 消息
-            flex_messages = generate_flex_messages(transformed_data)
-            
-            flex_message = FlexMessage(
-                alt_text="為您推薦其他地點",
-                contents=FlexContainer.from_dict(flex_messages)
-            )
-            
-            # 10. 發送新的推薦結果
-            messaging_api.reply_message(
-                ReplyMessageRequest(
-                    reply_token=event.reply_token,
-                    messages=[flex_message]
-                )
-            )
-
-            mongodb_obj.close()
+            finally:
+                mongodb_obj.close()
 
         except Exception as e:
             print(f"再推薦處理錯誤: {e}")
@@ -574,4 +553,4 @@ def handle_recommendation_message(event):
 
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=8787)
+    app.run(debug=False, host="0.0.0.0", port=5000)

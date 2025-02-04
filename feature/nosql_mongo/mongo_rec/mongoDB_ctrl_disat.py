@@ -86,39 +86,42 @@ class MongoDBManage_unsatisfied:
 
     def update_blacklist(self, line_user_id: str, place_ids: List[str]) -> bool:
         """
-        更新用戶的黑名單
+        更新用戶的黑名單，將新的 place_ids 加入到現有黑名單中
         
         參數:
             line_user_id: Line用戶ID
             place_ids: 要加入黑名單的地點ID列表
-            
+                
         回傳:
             bool: 更新是否成功
         """
         try:
-            # 找到該用戶的記錄
+            # 取得現有黑名單
             user_record = self.unsatisfied_collection.find_one(
                 {"line_user_id": line_user_id}
             )
-            
             if not user_record:
                 print(f"找不到用戶 {line_user_id} 的記錄")
                 return False
             
-            # 更新黑名單
+            # 合併現有和新的黑名單
+            current_blacklist = set(user_record.get("black_list", []))
+            new_blacklist = current_blacklist.union(place_ids)
+            
+            # 更新到資料庫
             result = self.unsatisfied_collection.update_one(
                 {"line_user_id": line_user_id},
-                {"$addToSet": {"black_list": {"$each": place_ids}}}
+                {"$set": {"black_list": list(new_blacklist)}}
             )
             
             success = result.modified_count > 0
             if success:
-                print(f"成功更新用戶 {line_user_id} 的黑名單")
+                print(f"用戶 {line_user_id} 的黑名單更新成功，共 {len(new_blacklist)} 個地點")
             else:
                 print(f"用戶 {line_user_id} 的黑名單無變化")
                 
             return success
-            
+                
         except Exception as e:
             print(f"更新黑名單時發生錯誤: {e}")
             return False
@@ -294,13 +297,13 @@ if __name__ == "__main__":
                 "black_list": set()
             }
             
-            if mongodb_obj.add_unsatisfied(test_query_info):
-                print("成功新增記錄!")
+            # if mongodb_obj.add_unsatisfied(test_query_info):
+            #     print("成功新增記錄!")
                 
-                # 測試更新黑名單
-                test_place_ids = [f"place{i}" for i in range(1, 11)]
-                if mongodb_obj.update_blacklist("U123456789", test_place_ids):
-                    print("成功更新黑名單!")
+            #     # 測試更新黑名單
+            #     test_place_ids = [f"place{i}" for i in range(1, 11)]
+            #     if mongodb_obj.update_blacklist("U123456789", test_place_ids):
+            #         print("成功更新黑名單!")
                 
     finally:
         mongodb_obj.close()
