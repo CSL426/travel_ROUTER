@@ -18,6 +18,7 @@ COPY data/fonts/mingliu.ttc /app/data/fonts/mingliu.ttc
 
 # 安裝 Python 依賴
 RUN poetry install --no-interaction --no-ansi --no-root
+RUN poetry add gunicorn==23.0.0
 
 # 設定環境變數
 ENV PYTHONUNBUFFERED=1
