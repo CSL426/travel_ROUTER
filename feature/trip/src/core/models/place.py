@@ -1,12 +1,12 @@
 # src/core/models/place.py
 
-from typing import Any, List, Dict, Optional, Union
+from typing import Any, Dict, Optional, Union
 import pandas as pd
 from pydantic import BaseModel, Field, field_validator, model_validator
 from datetime import datetime
 
 from ..services.time_service import TimeService
-from ..utils.validator import TripValidator, ValidationError
+from ..utils.validator import TripValidator
 
 
 class PlaceDetail(BaseModel):
@@ -18,6 +18,11 @@ class PlaceDetail(BaseModel):
     3. 分類標籤
     4. 時段標記
     """
+
+    place_id: Optional[str] = Field(
+        default=None,
+        description="Google maps place ID",
+    )
 
     name: str = Field(
         description="地點名稱",
@@ -89,45 +94,12 @@ class PlaceDetail(BaseModel):
         if 'duration' not in data and 'duration_min' in data:
             data['duration'] = data['duration_min']
         elif 'duration' not in data:
-            data['duration'] = 60 # 預設60分鐘
-
-        # # 如果都沒有,根據 label 設定預設值
-        # if 'duration' not in data or data['duration'] is None:
-        #     if 'label' in data:
-        #         data['duration'] = self._get_default_duration(data['label'])
-        #     else:
-        #         data['duration'] = 60  # 最終預設值
+            data['duration'] = 60  # 預設60分鐘
 
         # 為了相容性,確保 duration_min 也有值
         data['duration_min'] = data['duration']
 
         super().__init__(**data)
-
-    # @staticmethod
-    # def _get_default_duration(label: str) -> int:
-    #     """根據地點類型取得預設停留時間
-
-    #     Args:
-    #         label (str): 地點類型標籤
-
-    #     Returns:
-    #         int: 預設停留時間(分鐘)
-    #     """
-    #     durations = {
-    #         # 正餐餐廳
-    #         '中菜館': 90,
-    #         '壽司店': 90,
-    #         '餐廳': 90,
-    #         # 快速餐飲
-    #         '快餐店': 45,
-    #         '麵店': 45,
-    #         # 景點
-    #         '景點': 120,
-    #         '旅遊景點': 120,
-    #         # 預設值
-    #         'default': 60
-    #     }
-    #     return durations.get(label, durations['default'])
 
     @field_validator('period')
     def validate_period(cls, v: str) -> str:
