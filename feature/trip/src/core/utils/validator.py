@@ -1,7 +1,8 @@
 # src/core/utils/validator.py
 
-from datetime import datetime, time, timedelta
-from typing import List, Dict, Optional, Union
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
+from typing import Dict, Optional
 import re
 
 
@@ -362,7 +363,7 @@ class TripValidator:
             # 會包含所有預設值，包括明天的日期
         """
         # 計算明天的日期
-        tomorrow = datetime.now() + timedelta(days=1)
+        tomorrow = datetime.now(ZoneInfo('Asia/Taipei')) + timedelta(days=1)
         default_date = tomorrow.strftime('%m-%d')  # 格式化為 MM-DD
 
         # 預設值定義

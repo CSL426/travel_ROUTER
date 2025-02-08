@@ -421,6 +421,7 @@ class GeoService:
 
             location = result[0]['geometry']['location']
             return {
+                'name': address,
                 'lat': location['lat'],
                 'lon': location['lng'],
                 'duration_min': 0,

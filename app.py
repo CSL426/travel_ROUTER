@@ -108,11 +108,7 @@ def handle_postback(event):
                 plan_index = int(plan_index)
                 step = int(step)
 
-                # 1. 更新用戶偏好
-                dislike_reason = f"我不喜歡{name}({label})"
-                trip_db.update_user_dislike(line_id, dislike_reason)
-
-                # 2. 更新行程的restart_index
+                # 更新行程的restart_index
                 button_id = f"cancel_{plan_index}_{step}"
                 success = trip_db.update_plan_restart_index(
                     line_id=line_id,
@@ -123,6 +119,10 @@ def handle_postback(event):
                 print(f"更新結果: {success}, button_id: {button_id}")
 
                 if success:
+                    # 更新用戶偏好
+                    dislike_reason = f"我不喜歡{name}({label})"
+                    trip_db.update_user_dislike(line_id, dislike_reason)
+
                     dislike_button_text = f"已紀錄您不喜歡{name}({label})"
                 else:
                     dislike_button_text = f"別再按啦! 我已經知道您不喜歡{name}({label})"
@@ -163,7 +163,8 @@ def handle_message(event):
     except Exception:
         line_id = 'none_line_id'
 
-    trip_db.record_user_input(line_id, text_message)
+    if trip_db.record_user_input(line_id, text_message):
+        print(f"已記錄{line_id}說:{text_message}")
 
     try:
         with ApiClient(configuration) as api_client:

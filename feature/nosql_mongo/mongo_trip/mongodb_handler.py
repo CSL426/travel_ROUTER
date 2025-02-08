@@ -1,8 +1,10 @@
 from datetime import datetime, UTC
 from typing import Dict, List, Optional
+from zoneinfo import ZoneInfo
+
 import pymongo
 from pymongo.errors import PyMongoError
-from .mongodb_manager import MongoDBManager
+from feature.nosql_mongo.mongo_trip.mongodb_manager import MongoDBManager
 
 
 class TripDBHandler:
@@ -47,15 +49,13 @@ class TripDBHandler:
             ]
 
             if any(input_text.startswith(msg) for msg in skip_messages):
-                return True  # 直接返回,不記錄
+                return False  # 直接返回,不記錄
 
             if input_text.startswith("旅遊推薦") and len(input_text) > 4:
                 input_text = input_text[4:]
-            else:
-                return True
 
             input_record = {
-                "timestamp": datetime.now(UTC),
+                "timestamp": datetime.now(ZoneInfo('Asia/Taipei')),
                 "text": input_text if input_text.startswith("旅遊推薦") else input_text
             }
 
@@ -91,8 +91,8 @@ class TripDBHandler:
                 {"line_id": line_id},
                 {
                     "$push": {
-                        "new_messages": {
-                            "timestamp": datetime.now(UTC),
+                        "input_history": {
+                            "timestamp": datetime.now(ZoneInfo('Asia/Taipei')),
                             "text": dislike_reason
                         }
                     }
@@ -145,7 +145,7 @@ class TripDBHandler:
             if restart_index < current_restart:
                 update_data["$set"] = {
                     "restart_index": restart_index,
-                    "updated_at": datetime.now(UTC)
+                    "updated_at": datetime.now(ZoneInfo('Asia/Taipei'))
                 }
                 print(f"更新 restart_index 為 {restart_index}")
 
@@ -190,13 +190,14 @@ class TripDBHandler:
             record = {
                 "line_id": line_id,
                 "plan_index": new_index,
-                "timestamp": datetime.now(UTC),
+                "timestamp": datetime.now(ZoneInfo('Asia/Taipei')),
                 "input_text": input_text,
                 "requirement": requirement,
                 # "restart_index": restart_index,
                 "itinerary": [{
                     "step": item["step"],
                     "place_id": item["place_id"],
+                    "date": item["date"],
                     "name": item["name"],
                     "label": item["label"],
                     "lat": item["lat"],
@@ -358,7 +359,7 @@ class TripDBHandler:
                 {
                     "$set": {
                         "preferences_summary": summary,
-                        "last_summary_time": datetime.now(UTC)
+                        "last_summary_time": datetime.now(ZoneInfo('Asia/Taipei'))
                     }
                 },
                 upsert=True

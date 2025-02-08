@@ -136,7 +136,8 @@ class TripPlanningSystem:
                 current_location=self.start_location,
                 available_places=available_places,
                 current_time=context['start_time'],
-                previous_trip=previous_trip[:restart_index] if previous_trip else None
+                previous_trip=previous_trip[:restart_index] if previous_trip else None,
+                requirement=requirement
             )
 
             # 記錄執行時間

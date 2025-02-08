@@ -235,7 +235,7 @@ class TimeService:
             str: 時段名稱
 
         使用範例:
-            >>> now = datetime.now()
+            >>> now = datetime.now(ZoneInfo('Asia/Taipei'))
             >>> time_service.get_time_period(now)
             >>> time_service.get_time_period("12:30")
         """
