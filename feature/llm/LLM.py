@@ -6,6 +6,7 @@ import concurrent.futures  # 引入並行處理模組
 
 from feature.llm.utils import system_prompt
 
+
 class LLM_Manager:
     def __init__(self, ChatGPT_api_key):
         openai.api_key = ChatGPT_api_key  # 使用 ChatGPT_api_key 來設定 OpenAI API 金鑰
@@ -139,8 +140,7 @@ if __name__ == "__main__":
 
     # 呼叫 Thinking 和 Cloud 的並行處理函數
     user_input = "想去台北文青的地方，吃午餐要便宜又好吃，下午想去逛有特色的景點，晚餐要可以跟朋友聚餐"
-    
-    
+
     # ====================================================
     results = LLM_obj.Thinking_fun(user_input)
     print('======旅遊推薦======')
@@ -153,4 +153,3 @@ if __name__ == "__main__":
     print('======情境搜索======')
     print(f'input query = {user_input}\n')
     pprint(results, sort_dicts=False)
-    
