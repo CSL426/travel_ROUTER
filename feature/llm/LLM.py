@@ -5,7 +5,13 @@ import os
 import concurrent.futures  # 引入並行處理模組
 
 from feature.llm.utils import system_prompt
-
+from feature.llm.utils.extractor.plan_basic_req_extractor import plan_basic_req_extractor
+from feature.llm.utils.extractor.special_request_extractor import special_request_extractor
+from feature.llm.utils.extractor.trip_basic_req_extractor import trip_basic_req_extractor
+from feature.llm.utils.extractor.plan_preferred_statement_extractor import plan_preferred_statement_extractor
+from feature.llm.utils.extractor.trip_preferred_statement_extractor import trip_preferred_statement_extractor
+from feature.llm.utils.extractor.trip_restart_extractor import trip_restart_extractor
+from feature.llm.utils.extractor.summarize_history_extractor import summarize_history_extractor
 
 class LLM_Manager:
     def __init__(self, ChatGPT_api_key):
@@ -30,12 +36,15 @@ class LLM_Manager:
             max_tokens=800
         )
         content = response['choices'][0]['message']['content'].strip()
-        content = content.replace("：", ":")\
-            .replace("，", ",")\
-            .replace("。", ",")\
-            .replace("、", " ")\
-            .replace("？", "?")\
-            .replace("\n", " ")
+        content = (
+            content
+                .replace("：", ":")
+                .replace("，", ",")
+                .replace("。", ",")
+                .replace("、", " ")
+                .replace("？", "?")
+                .replace("\n", " ")
+        )
 
         try:
             data = json.loads(content)
@@ -50,8 +59,6 @@ class LLM_Manager:
                 start = min(content.find('{'), content.find('['))
                 # 找最後一個 '}' 或 ']' 的位置
                 end = max(content.rfind('}'), content.rfind(']')) + 1
-                if start == -1 or end <= 0:
-                    raise Exception("找不到完整的JSON內容")
 
                 # 擷取並解析JSON部分
                 json_str = content[start:end]
@@ -62,11 +69,8 @@ class LLM_Manager:
                 return data
 
             except Exception as e:
-                print(f"解析錯誤: {e}")
-                print("原始內容:", content)
-                if prompt == system_prompt.restart:
-                    return [0]
-                return None
+                print('LLM 在解 json 格式時即錯誤，將其回傳 "none" 給提取器輸出 預設值')
+                return 'none'
 
     def summarize_history(self, history_text: str) -> str:
         """整理歷史記錄成摘要文字
@@ -77,18 +81,24 @@ class LLM_Manager:
         Returns:
             str: 整理後的摘要
         """
-        try:
-            response = self.__Query(
-                prompt=system_prompt.summarize_history,
-                user_input=history_text,
-                format="List"
-            )
+        response = self.__Query(
+            prompt=system_prompt.summarize_history,
+            user_input=history_text,
+            format="List"
+        )
 
-            # __Query會回傳list,取第一個元素
-            return response[0] if response else ""
-        except Exception as e:
-            print(f"解析錯誤: {e}")
-            print("歷史紀錄:", history_text)
+        '''
+        歷史大綱 LLM 認證程序 
+        '''
+        print('========歷史大綱 LLM 認證程序========')
+        print('認證 - 總共一項資料 :')
+        # 歷史大剛提取器，確保  history 值格式正確無誤，為 list, length=1, 內容為一個字串, 字數大於 limit
+        response = summarize_history_extractor(response, 10)
+        print('=======================================\n\n')
+
+        # __Query會回傳['歷史總結語句'],取第一個元素
+        return response[0]
+
 
     def Thinking_fun(self, user_input):
         # 使用 ThreadPoolExecutor 來並行處理 API 請求
@@ -102,12 +112,27 @@ class LLM_Manager:
 
             # 等待所有任務完成並取得結果
             Thinking = []
-            for key, future in futures.items():
-                try:
-                    result = future.result()
-                    Thinking.append(result)
-                except Exception as e:
-                    print(f"error:\n{key}: {e}")
+            for future in futures.values():
+                result = future.result()
+                Thinking.append(result)
+            
+            '''
+            旅遊推薦端 LLM 認證程序 
+            '''
+            print('========旅遊推薦端 LLM 認證程序========')
+            print('認證 - 總共四項資料 :')
+            # 使用偏好語句篩選器，確保每句字數 > limit
+            Thinking[0] = trip_preferred_statement_extractor(Thinking[0], limit=10)
+
+            # 使用特殊篩選提取器，確保其格式無誤
+            Thinking[1] = special_request_extractor(Thinking[1]) 
+
+            # 使用旅遊基本需求提取器，除了 [出發地點、結束地點] 只能確認是字串格式外 , 確保LLM格式無誤
+            Thinking[2] = trip_basic_req_extractor(Thinking[2])
+
+            # 使用 restart 提取器 確保  LLM restart 值格式正確無誤，為 [int], length=1
+            Thinking[3] = trip_restart_extractor(Thinking[3])
+            print('=======================================\n\n')
 
             return Thinking
 
@@ -122,9 +147,24 @@ class LLM_Manager:
 
             # 等待所有任務完成並取得結果
             Cloud = []
-            for _, future in futures.items():
+            for future in futures.values():
                 result = future.result()
                 Cloud.append(result)
+
+            '''
+            情境搜索端 LLM 認證程序 
+            '''
+            print('========情境搜索端 LLM 認證程序========')
+            print('認證 - 總共三項資料 :')
+            # 使用情境搜尋偏好句篩選器，確保格式字串長度無誤
+            Cloud[0] = plan_preferred_statement_extractor(Cloud[0], limit = 10)
+
+            # 使用特殊篩選提取器，確保其格式無誤
+            Cloud[1] = special_request_extractor(Cloud[1]) 
+
+            # 使用旅遊基本需求提取器, 確保LLM格式無誤
+            Cloud[2] = plan_basic_req_extractor(Cloud[2])
+            print('=======================================\n\n')
 
             return Cloud
 
@@ -140,15 +180,23 @@ if __name__ == "__main__":
 
     # 呼叫 Thinking 和 Cloud 的並行處理函數
     user_input = "想去台北文青的地方，吃午餐要便宜又好吃，下午想去逛有特色的景點，晚餐要可以跟朋友聚餐"
-
-    # ====================================================
+    
+    
+    # ==============旅遊推薦 LLM 測試======================================
     results = LLM_obj.Thinking_fun(user_input)
     print('======旅遊推薦======')
     print(f'input query = {user_input}\n')
     pprint(results, sort_dicts=False)
     print('\n\n')
 
-    # ====================================================
+    # ==============旅遊推薦 歷史綱要 測試=================================
+    results = LLM_obj.summarize_history(user_input)
+    print('======歷史綱要 測試======')
+    print(f'input query = {user_input}\n')
+    pprint(results, sort_dicts=False)
+    print('\n\n')
+
+    # ===============情境搜所 LLM 測試=====================================
     results = LLM_obj.Cloud_fun(user_input)
     print('======情境搜索======')
     print(f'input query = {user_input}\n')

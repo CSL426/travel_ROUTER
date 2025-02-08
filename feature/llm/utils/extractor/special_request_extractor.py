@@ -27,7 +27,9 @@ def special_request_extractor(special_list: list[dict], debuger: bool=False):
             'wi-fi': special_list['wi-fi'] if isinstance(special_list['wi-fi'], bool) else False,
             '無障礙': special_list['無障礙'] if isinstance(special_list['無障礙'], bool) else False,
         }]
+        print('O : 客戶特殊需求llm 經過認證，格式無誤')
     except :
+        print('X : 特殊篩選llm 錯誤不進行特殊篩選')
         extract_special_list = [{
             '內用座位': False,
             '洗手間': False,
@@ -40,7 +42,7 @@ def special_request_extractor(special_list: list[dict], debuger: bool=False):
             'wi-fi': False,
             '無障礙': False
         }]
-        print('特殊篩選llm 錯誤不進行特殊篩選')
+        
     
     if debuger == True:
         print(extract_special_list)

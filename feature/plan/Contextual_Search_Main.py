@@ -28,16 +28,9 @@ def main(points, user_requirements):
     if user_budget != "none":
         matching_placeID.intersection_update(filter_by_budget(points, user_budget))
 
+    # max_distance_km, start_location 檢查在 llm 端已確認
     start_location = user_filters.get("出發地", "none")
     max_distance_km = user_filters.get("可接受距離門檻(KM)", "none")
-    if max_distance_km == "none":
-        max_distance_km = 100
-    else:
-        max_distance_km = float(max_distance_km)
-
-    if start_location == "none":
-        start_location = (25.0418, 121.5654)
-
     matching_placeID.intersection_update(filter_by_distance(points, start_location, max_distance_km))
 
     user_weekday = user_filters.get("星期別")

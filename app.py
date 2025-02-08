@@ -43,6 +43,7 @@ app = Flask(__name__)
 # 初始化 Configuration, WebhookHandler, RichMenuManager
 configuration = Configuration(access_token=LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
+
 rich_menu_manager = RichMenuManager(LINE_CHANNEL_ACCESS_TOKEN)
 rich_menu_manager.create_rich_menu()
 
