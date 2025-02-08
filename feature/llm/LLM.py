@@ -201,4 +201,3 @@ if __name__ == "__main__":
     print('======情境搜索======')
     print(f'input query = {user_input}\n')
     pprint(results, sort_dicts=False)
-    
