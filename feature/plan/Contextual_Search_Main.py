@@ -65,9 +65,9 @@ def calculate_weighted_scores(points, user_location, weights):
 
     for point in points:
         point['weighted_score'] = (
-            weights['distance'] * point.get('distance_normalized_score', 0) +
-            weights['comments'] * point.get('comment_score_normalized', 0) +
-            weights['similarity'] * point.get('retrival_Normalization', 0)
+            weights['distance'] * point['distance_normalized_score'] +
+            weights['comments'] * point['comment_score_normalized'] +
+            weights['similarity'] * point['retrival_Normalization']
         )
 
     points.sort(key=lambda x: x['weighted_score'], reverse=True)
