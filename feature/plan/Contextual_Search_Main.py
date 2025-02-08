@@ -20,24 +20,24 @@ def main(points, user_requirements):
     matching_placeID = set(r['placeID'] for r in points)
 
     # 篩選條件
-    desired_label = user_filters.get("類別")
+    desired_label = user_filters["類別"]
     if desired_label != "none":
         matching_placeID.intersection_update(filter_by_label_type(points, desired_label))
 
-    user_budget = user_filters.get("預算")
+    user_budget = user_filters["預算"]
     if user_budget != "none":
         matching_placeID.intersection_update(filter_by_budget(points, user_budget))
 
     # max_distance_km, start_location 檢查在 llm 端已確認
-    start_location = user_filters.get("出發地", "none")
-    max_distance_km = user_filters.get("可接受距離門檻(KM)", "none")
+    start_location = user_filters["出發地點"]
+    max_distance_km = user_filters["可接受距離門檻(KM)"]
     matching_placeID.intersection_update(filter_by_distance(points, start_location, max_distance_km))
 
-    user_weekday = user_filters.get("星期別")
+    user_weekday = user_filters["星期別"]
     if user_weekday != "none":
         matching_placeID.intersection_update(filter_by_weekday(points, user_weekday))
 
-    user_arrival_time = user_filters.get("時間")
+    user_arrival_time = user_filters["時間"]
     if user_arrival_time != "none":
         matching_placeID.intersection_update(filter_by_time_without_weekday(points, user_arrival_time))
 
@@ -102,10 +102,7 @@ def filter_and_calculate_scores(points, user_requirements, weights):
         return []
 
     # 計算加權總分並排序
-    user_location = user_requirements[0].get("出發地", (25.0418, 121.5654))  # 預設台北車站
-    if user_location == "none":
-        user_location = (25.0418, 121.5654)
-
+    user_location = user_requirements[0]["出發地點"]  # 預設台北車站
     sorted_points = calculate_weighted_scores(filtered_points, user_location, weights)
     
     return sorted_points
@@ -211,11 +208,11 @@ if __name__ == "__main__":
     user_requirements = [
         {
             "星期別": 2,
-            "hours": "none",
+            '時間': 'none',
             "類別": "none",
-            "預算": 200,
-            "出發地": (25.0478, 121.5171),
-            "可接受距離門檻(KM)": "none",
+            "預算": 'none',
+            "出發地點": (25.0478, 121.5171),
+            "可接受距離門檻(KM)": 30,
             "交通類別": "步行",
         }
     ]
