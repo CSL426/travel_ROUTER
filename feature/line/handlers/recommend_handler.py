@@ -42,62 +42,63 @@ class RecommendHandler:
             user_queries: 使用者查詢記錄字典
         """
         user_id = event.source.user_id
+        messaging_api = self.messaging_api
+        config = self.config
 
         try:
-            # 檢查是否有前一次的推薦結果
             transformed_data = recent_recommendations.get(user_id, {})
             if not transformed_data:
-                self._send_text_message(event.reply_token, "請先進行情境搜索")
+                messaging_api.reply_message(
+                    ReplyMessageRequest(
+                        reply_token=event.reply_token,
+                        messages=[TextMessage(text="請先進行情境搜索")]
+                    )
+                )
                 return
 
-            # 取得所有已推薦的地點ID
+            # 取得目前要加入 black_list 的 place_ids
             place_ids = list(transformed_data.keys())
-
-            # 取得原始查詢資訊
-            original_query = user_queries.get(user_id)
-            if not original_query:
-                self._send_text_message(event.reply_token, "無法找到原始查詢信息")
-                return
-
-            # 更新查詢資訊
-            query_info = enrich_query(original_query, user_id, place_ids)
-
-            # 初始化MongoDB並更新記錄
-            mongodb_obj = MongoDBManage_unsatisfied(self.config)
-            if mongodb_obj.test_connection():
-                if not mongodb_obj.check_user_exists(user_id):
+            
+            # 修改 mongodb 操作部分
+            mongodb_obj = MongoDBManage_unsatisfied(config)
+            try:
+                mongodb_obj.test_connection()
+                original_query = user_queries.get(user_id, {}) #定位到最新的query_info
+                query_info = enrich_query(original_query, place_ids) #將再推薦的place id丟進去
+                if not mongodb_obj.check_user_exists(user_id): #判斷line_user
                     mongodb_obj.add_unsatisfied(query_info)
                 else:
-                    if mongodb_obj.compare_query(query_info):
-                        mongodb_obj.update_blacklist(user_id, place_ids)
-                    else:
-                        mongodb_obj.update_query_info(query_info)
+                    mongodb_obj.update_blacklist(user_id, place_ids)
 
-            # 重新運算推薦結果
-            final_results, query_info = rerun_rec(query_info, self.config)
+                print(f"Original black list count:{len(original_query["black_list"])}")
+                print(f"Complete black list count:{len(query_info["black_list"])}")
+                print(f"Place IDs being added: {place_ids}")
 
-            if self.logger:
-                self.logger.debug("新的推薦結果:")
-                pprint(final_results, sort_dicts=False)
+                # 重新執行推薦
+                final_results = rerun_rec(query_info, config)
 
-            # 轉換並更新推薦結果
-            transformed_data = transform_location_data(final_results)
-            recent_recommendations[user_id] = transformed_data
+                transformed_data = transform_location_data(final_results)
+                
+                recent_recommendations[user_id] = transformed_data
+                user_records = mongodb_obj.get_user_records(user_id)  # 返回 List[Dict]
+                user_queries[user_id] = user_records[0]  # 取出唯一的 Dict
 
-            # 生成新的回應訊息
-            flex_messages = generate_flex_messages(transformed_data)
-            flex_message = FlexMessage(
-                alt_text="為您推薦其他地點",
-                contents=FlexContainer.from_dict(flex_messages)
-            )
-            self.messaging_api.reply_message(
-                ReplyMessageRequest(
-                    reply_token=event.reply_token,
-                    messages=[flex_message]
+
+                flex_messages = generate_flex_messages(transformed_data)
+                flex_message = FlexMessage(
+                    alt_text="為您推薦其他地點",
+                    contents=FlexContainer.from_dict(flex_messages)
                 )
-            )
+                
+                messaging_api.reply_message(
+                    ReplyMessageRequest(
+                        reply_token=event.reply_token,
+                        messages=[flex_message]
+                    )
+                )
 
-            mongodb_obj.close()
+            finally:
+                mongodb_obj.close()
 
         except Exception as e:
             if self.logger:

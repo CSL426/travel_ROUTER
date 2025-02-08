@@ -18,7 +18,7 @@ def recommandation(user_Q: str, config: dict[str, str]) -> list[dict]:
     """
     # 初始化 LLM 物件
     LLM_obj = LLM_Manager(config['ChatGPT_api_key'])
-    weights = {'distance': 0.3, 'comments': 0.3, 'similarity': 0.4}
+    weights = {'distance': 0.2, 'comments': 0.3, 'similarity': 0.5}
     
     # 獲取 LLM 分析結果
     results = LLM_obj.Cloud_fun(user_Q)
