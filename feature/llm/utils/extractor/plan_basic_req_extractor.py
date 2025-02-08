@@ -6,6 +6,9 @@ from feature.llm.utils.extractor.format_valid.format_valid import (
 )
 
 def plan_basic_req_extractor(basic_req:list[dict], debuger: bool=False):
+    '''
+    重新提取 情境搜索的 LLM 輸出，確保格式無誤
+    '''
     try:
         basic_req = basic_req[0]
         extract_basic_req = [{
@@ -20,9 +23,9 @@ def plan_basic_req_extractor(basic_req:list[dict], debuger: bool=False):
             '可接受距離門檻(KM)': basic_req['可接受距離門檻(KM)'] if is_float(basic_req['可接受距離門檻(KM)']) else 30,   
             '交通方式': str(basic_req['交通方式']) if basic_req['交通方式'] in ['大眾運輸','開車','騎自行車','步行'] else '大眾運輸', 
         }]
-        print('========客戶基本要求llm 經過認證，格式無誤========')
+        print('O : 客戶基本要求llm 經過認證，格式無誤')
     except:
-        print('========客戶基本要求llm 錯誤, 客戶基本要求使用預設值========')
+        print('X : 客戶基本要求llm 錯誤, 客戶基本要求使用預設值')
         extract_basic_req = [{
         # 'none'
         '星期別': 'none',  

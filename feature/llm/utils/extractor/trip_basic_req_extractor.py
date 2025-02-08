@@ -5,6 +5,9 @@ from feature.llm.utils.extractor.format_valid.format_valid import (
 )
 
 def trip_basic_req_extractor(basic_req:list[dict], debuger: bool=False):
+    '''
+    重新提取旅遊 LLM 輸出, 除了 出發地點、結束地點只能確認是字串格式外 ], 確保LLM格式無誤
+    '''
     basic_req = basic_req[0]
     try:
         extract_basic_req = [{
@@ -20,10 +23,10 @@ def trip_basic_req_extractor(basic_req:list[dict], debuger: bool=False):
             '預算': basic_req['預算'] if is_float(basic_req['預算']) else 'none',
             '出發日': str(basic_req['出發日']) if is_valid_mm_dd(basic_req['出發日']) else 'none',
         }]
-        print('========客戶基本要求llm 經過認證，除了"出發地點"及"結束地點"，其他格式無誤========')
+        print('O : 客戶基本要求llm 經過認證，其他格式無誤\n    ! 除了"出發地點"及"結束地點" ! ')
     except:
         # 預設值
-        print('========客戶基本要llm 錯誤, 客戶基本要求使用預設值========')
+        print('X : 客戶基本要llm 錯誤, 客戶基本要求使用預設值')
         extract_basic_req = [{
             '出發時間': '09:00',
             '結束時間': '21:00',
@@ -35,7 +38,7 @@ def trip_basic_req_extractor(basic_req:list[dict], debuger: bool=False):
             '中餐時間': '12:00',
             '晚餐時間': '18:00',
             '預算': 'none',
-            '出發日': 'none'
+            '出發日': 'none',
         }]
 
 
