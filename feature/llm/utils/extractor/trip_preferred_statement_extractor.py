@@ -15,9 +15,10 @@ def trip_preferred_statement_extractor(preferred_statements:list[dict], limit:in
     unvalid_num = 0     # 不通過使用預設的數量
     try:
         for idx, diction in enumerate(preferred_statements): 
-            preferred_statement = list(diction.values())[0]
+            # preferred_statement = list(diction.values())[0]
+            key, preferred_statement = next(iter(diction.items()))
             if len(preferred_statement) > limit:
-                extract_preferred_statement.append({preferred_statement})
+                extract_preferred_statement.append({key : preferred_statement})
                 valid_num += 1
             else:
                 extract_preferred_statement.append(defaut_statements[idx])
