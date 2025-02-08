@@ -20,7 +20,7 @@ class TripController:
         初始化控制器
 
         Args:
-            config: dict，包含所需的所有設定
+            config: dict (包含所需的所有設定)
                 - jina_url: Jina AI 的 URL
                 - jina_headers_Authorization: Jina 認證金鑰
                 - qdrant_url: Qdrant 資料庫 URL
@@ -51,7 +51,7 @@ class TripController:
                 line_id = "test_user_id"  # 這裡先寫死測試用
 
             # 1. 記錄用戶輸入
-            trip_db.record_user_input(line_id, input_text)
+            # trip_db.record_user_input(line_id, input_text)
 
             # 2. 取得之前的行程
             latest = trip_db.get_latest_plan(line_id=line_id)
@@ -69,7 +69,10 @@ class TripController:
                 self._analyze_intent(text=input_for_LLM)
             )
 
-            restart_index = int(restart_index[0]) if restart_index else 0
+            if latest and 'restart_index' in latest:
+                restart_index = latest.get('restart_index', 0)
+            else:
+                restart_index = int(restart_index[0]) if restart_index else 0
 
             # 5. 向量檢索
             placeIDs = self._vector_retrieval(period_describe)
@@ -90,7 +93,6 @@ class TripController:
             trip_db.save_plan(
                 line_id=line_id,
                 input_text=input_text,
-                restart_index=restart_index,
                 requirement=base_requirement,
                 itinerary=result
             )
@@ -142,8 +144,8 @@ class TripController:
             qdrant_obj = qdrant_search(
                 collection_name='view_restaurant',
                 config=self.config,
-                score_threshold=0.6,
-                limit=1000
+                score_threshold=0.5,
+                limit=100
             )
             # period_describe = [
             #     {'上午': '喜歡在文青咖啡廳裡享受幽靜且美麗的裝潢'},
@@ -387,7 +389,7 @@ if __name__ == "__main__":
         controller_instance = TripController(config)
 
         # test_input = "開車，想去台北文青的地方，吃午餐要便宜又好吃，下午想去逛有特色的景點，晚餐要可以跟朋友聚餐"
-        test_input = "重新規畫 想去酒吧"
+        test_input = "隨意隨意"
         result = controller_instance.process_message(test_input)
         controller_instance.trip_planner.print_itinerary(result)
 

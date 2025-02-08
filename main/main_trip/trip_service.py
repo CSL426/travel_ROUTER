@@ -1,6 +1,6 @@
 from typing import Dict, List
 
-from main.main_trip import TripController, init_config
+from main.main_trip.controllers.controller import TripController, init_config
 
 
 def run_trip_planner(
@@ -18,6 +18,7 @@ def run_trip_planner(
     Returns:
         str - 完整的行程規劃結果
     """
+
     try:
         controller_instance = TripController(init_config())
 
@@ -35,7 +36,7 @@ def run_trip_planner(
 
 
 if __name__ == "__main__":
-    test_input = "資料初始化"
+    test_input = "我想去台北玩"
     result = run_trip_planner(
         text=test_input,
         line_id="test_user_id"
