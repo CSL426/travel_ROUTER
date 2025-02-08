@@ -389,7 +389,7 @@ if __name__ == "__main__":
         controller_instance = TripController(config)
 
         # test_input = "開車，想去台北文青的地方，吃午餐要便宜又好吃，下午想去逛有特色的景點，晚餐要可以跟朋友聚餐"
-        test_input = "隨意隨意"
+        test_input = "不喜歡第五個點"
         result = controller_instance.process_message(test_input)
         controller_instance.trip_planner.print_itinerary(result)
 

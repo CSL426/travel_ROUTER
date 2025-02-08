@@ -1,10 +1,9 @@
 # src/core/services/google_maps.py
 
-from abc import ABC, abstractmethod
-from typing import Dict, Tuple, Optional, List
+from typing import Dict, Tuple
 from datetime import datetime
+from zoneinfo import ZoneInfo
 import googlemaps
-from ..utils.cache_decorator import cached
 
 
 class GoogleMapsService:
@@ -54,7 +53,7 @@ class GoogleMapsService:
         self._validate_coordinates(origin, destination)
         self._validate_transport_mode(mode)
 
-        departure_time = departure_time or datetime.now()
+        departure_time = departure_time or datetime.now(ZoneInfo('Asia/Taipei'))
 
         try:
             result = self.client.directions(

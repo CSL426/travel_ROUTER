@@ -1,7 +1,8 @@
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 def Second(data):
-    current_date = datetime.now().strftime("%Y/%m/%d")
+    current_date = datetime.now(ZoneInfo('Asia/Taipei')).strftime("%Y/%m/%d")
     
     # 定義交通方式對應的圖示
     transport_icons = {

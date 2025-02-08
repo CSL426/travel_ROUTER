@@ -1,8 +1,9 @@
 # src/core/utils/cache_decorator.py
 
 from functools import wraps
-from typing import Callable, TypeVar, Any, Dict
+from typing import Callable, TypeVar
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 T = TypeVar('T')  # 定義泛型型別，用於函數回傳值
 
@@ -68,7 +69,7 @@ def geo_cache(maxsize: int = 256):
         try:
             # 確認是否有足夠的參數（self, origin, destination, ...）
             if len(func_args) < 3:
-                return f"default_key_{datetime.now().timestamp()}"
+                return f"default_key_{datetime.now(ZoneInfo('Asia/Taipei')).timestamp()}"
 
             # 解析座標參數
             origin = func_args[1]
@@ -77,11 +78,11 @@ def geo_cache(maxsize: int = 256):
 
             # 檢查座標格式
             if not isinstance(origin, dict) or not isinstance(destination, dict):
-                return f"invalid_format_key_{datetime.now().timestamp()}"
+                return f"invalid_format_key_{datetime.now(ZoneInfo('Asia/Taipei')).timestamp()}"
 
             if 'lat' not in origin or 'lon' not in origin or \
                'lat' not in destination or 'lon' not in destination:
-                return f"missing_coord_key_{datetime.now().timestamp()}"
+                return f"missing_coord_key_{datetime.now(ZoneInfo('Asia/Taipei')).timestamp()}"
 
             # 建立標準化的鍵值
             key = (f"{float(origin['lat']):.6f},{float(origin['lon']):.6f}_"
@@ -92,7 +93,7 @@ def geo_cache(maxsize: int = 256):
 
         except Exception as e:
             print(f"建立快取鍵值時發生錯誤: {str(e)}")
-            return f"error_key_{datetime.now().timestamp()}"
+            return f"error_key_{datetime.now(ZoneInfo('Asia/Taipei')).timestamp()}"
 
     def decorator(func):
         # 使用字典儲存快取
