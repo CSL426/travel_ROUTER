@@ -8,6 +8,7 @@ LINE Rich Menu模組 - 混合使用MessageAction和PostbackAction
 """
 
 import io
+import time
 from linebot.v3.messaging import (
     Configuration,
     RichMenuRequest,
@@ -19,10 +20,12 @@ from linebot.v3.messaging import (
     ApiClient,
     MessagingApi,
     RichMenuSwitchAction,
-    CreateRichMenuAliasRequest
+    CreateRichMenuAliasRequest,
 )
 from PIL import Image, ImageDraw, ImageFont
 import requests
+
+# 目前在Docker上跑會有錯誤訊息，但功能正常: 待解決
 
 
 class RichMenuManager:
@@ -39,51 +42,128 @@ class RichMenuManager:
         self.configuration = Configuration(access_token=channel_access_token)
 
     def create_rich_menu(self):
-        """建立兩個Rich Menu並設定切換"""
+        """建立聊天室的Rich Menu選單
 
+        流程:
+        1. 清理現有的rich menu和alias
+        2. 建立新的search menu和trip menu
+        3. 設定alias對應關係
+        4. 設定預設選單為trip menu
+
+        錯誤處理:
+        - 404錯誤(找不到資源)會被優雅處理
+        - 重複執行會被防止
+        - 關鍵錯誤會拋出異常
+
+        Returns:
+            tuple: (trip_menu_id, search_menu_id) 建立的兩個選單ID
+        """
         api_client = ApiClient(self.configuration)
         messaging_api = MessagingApi(api_client)
 
+        # 用來控制延遲的helper function
+        def wait(seconds: int = 1):
+            time.sleep(seconds)
+
         try:
+            print("開始建立Rich Menu...")
 
-            rich_menu_list = messaging_api.get_rich_menu_list()
-            for menu in rich_menu_list.richmenus:
-                messaging_api.delete_rich_menu(rich_menu_id=menu.rich_menu_id)
-            # 刪除現有的alias
+            # 1. 清理現有資源
+            print("清理現有資源...")
             try:
-                messaging_api.delete_rich_menu_alias("trip_menu")
-                messaging_api.delete_rich_menu_alias("search_menu")
-            except:
-                pass
+                # 先刪除alias
+                for alias in ["trip_menu", "search_menu"]:
+                    try:
+                        messaging_api.delete_rich_menu_alias(alias)
+                        print(f"- 成功刪除alias: {alias}")
+                    except Exception as e:
+                        if '404' not in str(e):  # 忽略404錯誤
+                            print(f"- 刪除alias {alias} 時發生錯誤: {str(e)}")
 
-            # 建立新選單
-            search_menu_id = self._create_search_menu()
-            trip_menu_id = self._create_trip_menu()
+                wait()  # 等待alias刪除完成
 
-            # 建立新的alias
-            messaging_api.create_rich_menu_alias(
-                CreateRichMenuAliasRequest(
-                    richMenuAliasId="trip_menu",
-                    richMenuId=trip_menu_id,
+                # 再刪除所有menu
+                rich_menu_list = messaging_api.get_rich_menu_list()
+                if hasattr(rich_menu_list, 'richmenus'):
+                    for menu in rich_menu_list.richmenus:
+                        try:
+                            messaging_api.delete_rich_menu(
+                                rich_menu_id=menu.rich_menu_id)
+                            print(f"- 成功刪除menu: {menu.rich_menu_id}")
+                        except Exception as e:
+                            if '404' not in str(e):  # 忽略404錯誤
+                                print(f"- 刪除menu時發生錯誤: {str(e)}")
+
+            except Exception as e:
+                print(f"清理資源時發生錯誤: {str(e)}")
+
+            wait(2)  # 確保清理完成
+
+            # 2. 建立新的menu
+            print("\n建立新的Rich Menu...")
+            try:
+                search_menu_id = self._create_search_menu()
+                print(f"- 建立search menu成功: {search_menu_id}")
+
+                wait()  # 等待第一個menu建立完成
+
+                trip_menu_id = self._create_trip_menu()
+                print(f"- 建立trip menu成功: {trip_menu_id}")
+
+                wait()  # 等待第二個menu建立完成
+
+            except Exception as e:
+                print(f"建立menu時發生錯誤: {str(e)}")
+                raise e
+
+            # 3. 設定alias
+            print("\n設定Rich Menu alias...")
+            try:
+                messaging_api.create_rich_menu_alias(
+                    CreateRichMenuAliasRequest(
+                        richMenuAliasId="search_menu",
+                        richMenuId=search_menu_id
+                    )
                 )
-            )
-            messaging_api.create_rich_menu_alias(
-                CreateRichMenuAliasRequest(
-                    richMenuAliasId="search_menu",
-                    richMenuId=search_menu_id,
+                print("- 設定search_menu alias成功")
+
+                wait()  # 等待第一個alias設定完成
+
+                messaging_api.create_rich_menu_alias(
+                    CreateRichMenuAliasRequest(
+                        richMenuAliasId="trip_menu",
+                        richMenuId=trip_menu_id
+                    )
                 )
-            )
+                print("- 設定trip_menu alias成功")
 
-            # 設定預設選單
-            messaging_api.set_default_rich_menu(rich_menu_id=trip_menu_id)
+            except Exception as e:
+                if 'conflict' in str(e):
+                    print("- Alias已存在,略過設定")
+                else:
+                    print(f"設定alias時發生錯誤: {str(e)}")
+                    raise e
 
+            # 4. 設定預設選單
+            try:
+                messaging_api.set_default_rich_menu(rich_menu_id=trip_menu_id)
+                print("\n成功設定預設選單為trip menu")
+            except Exception as e:
+                print(f"設定預設選單時發生錯誤: {str(e)}")
+                raise e
+
+            print("\nRich Menu建立完成!")
             return trip_menu_id, search_menu_id
+
         except Exception as e:
-            print(f"建立Rich Menu時發生錯誤: {str(e)}")
-            # 發生錯誤時處理
+            print(f"\n建立Rich Menu時發生嚴重錯誤: {str(e)}")
+            # 清理資源
             try:
-                messaging_api.delete_rich_menu_alias("trip_menu")
-                messaging_api.delete_rich_menu_alias("search_menu")
+                for alias in ["trip_menu", "search_menu"]:
+                    try:
+                        messaging_api.delete_rich_menu_alias(alias)
+                    except:
+                        pass
             except:
                 pass
             raise e
@@ -202,9 +282,9 @@ class RichMenuManager:
         draw = ImageDraw.Draw(img)
 
         # 字型設定
-        tab_font = ImageFont.truetype('msjh.ttc', 100)  # 改用微軟正黑體
-        current_tab_font = ImageFont.truetype('msjh.ttc', 105)
-        button_font = ImageFont.truetype('msjh.ttc', 120)
+        tab_font = ImageFont.truetype('data/fonts/msjh.ttc', 100)  # 改用微軟正黑體
+        current_tab_font = ImageFont.truetype('data/fonts/msjhbd.ttc', 105)
+        button_font = ImageFont.truetype('data/fonts/msjh.ttc', 120)
 
         # 繪製Tab區域
         draw.rectangle([0, 0, 1250, 200], fill='#bbbbbb')  # 淺灰色底
@@ -283,9 +363,9 @@ class RichMenuManager:
         draw = ImageDraw.Draw(img)
 
         # 字型設定
-        tab_font = ImageFont.truetype('msjh.ttc', 100)  # 改用微軟正黑體
-        current_tab_font = ImageFont.truetype('msjh.ttc', 105)
-        button_font = ImageFont.truetype('msjh.ttc', 120)
+        tab_font = ImageFont.truetype('data/fonts/msjh.ttc', 100)  # 改用微軟正黑體
+        current_tab_font = ImageFont.truetype('data/fonts/msjhbd.ttc', 105)
+        button_font = ImageFont.truetype('data/fonts/msjh.ttc', 120)
 
         # 繪製Tab區域
         draw.rectangle([0, 0, 1250, 200], fill='#d1cdcd')  # 當前頁面

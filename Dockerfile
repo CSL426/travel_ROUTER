@@ -30,7 +30,7 @@ ENV PYTHONUNBUFFERED=1
 ENV PORT=8080
 
 # 暴露端口
-EXPOSE ${PORT}
+EXPOSE $PORT
 
 # 使用 gunicorn 執行應用程式
-CMD exec poetry run gunicorn --workers=2 --threads=8 --timeout=0 --bind=:${PORT} app:app
+CMD poetry run gunicorn --workers=2 --threads=8 --timeout=30 --bind=:$PORT --access-logfile - --error-logfile - app:app
