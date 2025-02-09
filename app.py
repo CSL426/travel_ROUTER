@@ -44,8 +44,15 @@ app = Flask(__name__)
 configuration = Configuration(access_token=LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
 
-rich_menu_manager = RichMenuManager(LINE_CHANNEL_ACCESS_TOKEN)
-rich_menu_manager.create_rich_menu()
+try:
+    rich_menu_manager = RichMenuManager(LINE_CHANNEL_ACCESS_TOKEN)
+    menu_ids = rich_menu_manager.create_rich_menu()
+    if menu_ids[0] is None:
+        print("Rich Menu 建立失敗,但程式將繼續執行")
+    else:
+        print("Rich Menu 建立成功")
+except Exception as e:
+    print(f"Rich Menu 初始化出錯,但程式將繼續執行: {str(e)}")
 
 
 @app.route("/callback", methods=['POST'])
@@ -242,4 +249,4 @@ def handle_message(event):
 
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=8787)
+    app.run(debug=True, host="0.0.0.0", port=8080)
