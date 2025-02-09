@@ -15,6 +15,9 @@ COPY . .
 
 # 拷貝字型檔案到容器中的適當目錄
 COPY data/fonts/mingliu.ttc /app/data/fonts/mingliu.ttc
+COPY data/fonts/mingliu.ttc /app/data/fonts/msjh.ttc
+COPY data/fonts/mingliu.ttc /app/data/fonts/msjhbd.ttc
+
 
 # 安裝 Python 依賴
 RUN poetry install --no-interaction --no-ansi --no-root
