@@ -314,7 +314,7 @@ class RichMenuManager:
             img.paste(travel_icon, (250, y_start), travel_icon)
 
         # 文字
-        draw.text((417, y_start + button_height + 100), "規劃行程",
+        draw.text((500, y_start + button_height + 100), "規劃行程",
                   font=button_font, anchor='mm', fill='black')
 
         # 重新規劃按鈕 (中)
@@ -395,7 +395,7 @@ class RichMenuManager:
             img.paste(search_icon, (250, y_start), search_icon)
 
         # 文字
-        draw.text((417, y_start + button_height + 100), "開始搜索",
+        draw.text((500, y_start + button_height + 100), "開始搜索",
                   font=button_font, anchor='mm', fill='black')
 
         # 我的收藏按鈕 (中)

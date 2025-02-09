@@ -198,7 +198,7 @@ def handle_message(event):
     # ======================================================以下是旅遊推薦
             elif command == "旅遊推薦":
                 command_handler.handle_trip_command(event, parameter, line_id)
-            elif command == "記錄初始化":
+            elif command == "紀錄初始化":
                 command_handler.handle_init_command(event, line_id)
 
     # ======================================================以下是情境搜索
