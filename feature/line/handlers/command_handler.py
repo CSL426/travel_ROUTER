@@ -54,8 +54,8 @@ class CommandHandler:
 
         # 判斷記錄初始化指令
         # 只接受純"記錄初始化"五個字
-        if text == "記錄初始化":
-            return "記錄初始化", None
+        if text == "記錄初始化" or text == "紀錄初始化":
+            return "紀錄初始化", None
 
         # 其他指令直接返回原始文字,無參數
         return text, None
@@ -115,7 +115,7 @@ class CommandHandler:
     def handle_init_command(self,
                             event: MessageEvent,
                             line_id: str):
-        """處理記錄初始化指令
+        """處理紀錄初始化指令
 
         Args:
             event: LINE message event
@@ -133,11 +133,11 @@ class CommandHandler:
             )
         except Exception as e:
             if self.logger:
-                self.logger.error(f"處理記錄初始化時發生錯誤: {str(e)}")
+                self.logger.error(f"處理紀錄初始化時發生錯誤: {str(e)}")
             self.messaging_api.reply_message_with_http_info(
                 ReplyMessageRequest(
                     reply_token=event.reply_token,
-                    messages=[TextMessage(text="處理記錄初始化時發生錯誤，請稍後再試")]
+                    messages=[TextMessage(text="處理紀錄初始化時發生錯誤，請稍後再試")]
                 )
             )
 
