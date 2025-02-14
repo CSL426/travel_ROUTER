@@ -219,7 +219,7 @@ class TripController:
         """
         try:
             # 讀取duration資料
-            duration_df = pd.read_csv('data\\emotion_analysis.csv')
+            duration_df = pd.read_csv('data/emotion_analysis.csv')
 
             # 建立查找字典
             duration_dict = duration_df.set_index(
