@@ -54,16 +54,18 @@ class CommandHandler:
 
         # 判斷記錄初始化指令
         # 只接受純"記錄初始化"五個字
-        if text == "記錄初始化":
-            return "記錄初始化", None
+        if text == ["記錄初始化", "紀錄初始化"]:
+            return "紀錄初始化", None
 
         # 其他指令直接返回原始文字,無參數
         return text, None
 
-    def handle_trip_command(self,
-                            event: MessageEvent,
-                            parameter: str,
-                            line_id: str):
+    def handle_trip_command(
+        self,
+        event: MessageEvent,
+        parameter: str,
+        line_id: str
+    ):
         """處理旅遊推薦指令
 
         Args:
@@ -72,7 +74,6 @@ class CommandHandler:
             line_id: 使用者LINE ID
         """
         try:
-
 
             latest = trip_db.get_latest_plan(line_id)
             if latest:
@@ -91,15 +92,17 @@ class CommandHandler:
                 "contents": [First(data, plan_index + 1)]
             }
 
-            flex_message = FlexMessage(
-                alt_text="一日遊行程",
-                contents=FlexContainer.from_dict(carousel)
-            )
+            messages = [
+                # TextMessage(text="規劃行程中，請稍候..."),
+                FlexMessage(
+                    alt_text="一日遊行程",
+                    contents=FlexContainer.from_dict(carousel)
+                )]
 
             self.messaging_api.reply_message_with_http_info(
                 ReplyMessageRequest(
                     reply_token=event.reply_token,
-                    messages=[flex_message]
+                    messages=messages
                 )
             )
         except Exception as e:
@@ -112,9 +115,11 @@ class CommandHandler:
                 )
             )
 
-    def handle_init_command(self,
-                            event: MessageEvent,
-                            line_id: str):
+    def handle_init_command(
+        self,
+        event: MessageEvent,
+        line_id: str
+    ):
         """處理記錄初始化指令
 
         Args:

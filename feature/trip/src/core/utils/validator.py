@@ -411,8 +411,8 @@ class TripValidator:
             Dict: {'lat': float, 'lon': float} 或 None
 
         使用範例:
-            >>> TripValidator.convert_coordinates("25.0478, 121.5170")
-            {'lat': 25.0478, 'lon': 121.5170}
+            >>> TripValidator.convert_coordinates("25.0480194, 121.5168608")
+            {'lat': 25.0480194, 'lon': 121.5168608}
         """
         if not coord_str:
             return None
