@@ -1,3 +1,5 @@
+from datetime import datetime
+from zoneinfo import ZoneInfo
 from dotenv import dotenv_values
 from flask import Flask, request, abort
 from linebot.v3 import WebhookHandler
@@ -8,10 +10,16 @@ from linebot.v3.messaging import (
     MessagingApi,
     ReplyMessageRequest,
     TextMessage,
+    QuickReply,
+    QuickReplyItem,
+    LocationAction,
+    PostbackAction,
+    MessageAction,
 )
 from linebot.v3.webhooks import (
     MessageEvent,
     TextMessageContent,
+    LocationMessageContent,
     PostbackEvent,
 )
 
@@ -27,6 +35,7 @@ from feature.line.handlers import (
 )
 from feature.nosql_mongo.mongo_trip.db_helper import trip_db
 
+trip_user_states = {}
 
 # 載入 .env 檔案中的環境變數
 config = dotenv_values("./.env")
@@ -93,15 +102,52 @@ def handle_postback(event):
     - cancel_3_5_遼寧街夜市_夜市 
     表示第3個行程的第5個景點
     """
+    data = event.postback.data
+    line_id = event.source.user_id
+
+    if line_id in trip_user_states and not data.startswith("action=trip_planning"):
+        del trip_user_states[line_id]
+
     try:
         with ApiClient(configuration) as api_client:
             messaging_api = MessagingApi(api_client)
             command_handler = CommandHandler(messaging_api, app.logger)
 
-            data = event.postback.data
-            line_id = event.source.user_id
-
             if data.startswith("action=trip_planning"):
+                trip_user_states[line_id] = "waiting_location"
+
+                # 建立Quick Reply選項
+                quick_reply = QuickReply(
+                    items=[
+                        # 位置分享按鈕
+                        QuickReplyItem(
+                            action=LocationAction(
+                                label="指定起點開始規劃"
+                            )
+                        ),
+                        # 隨機規劃按鈕
+                        QuickReplyItem(
+                            action=PostbackAction(
+                                label="直接開始規劃",
+                                data="action=direct_plan"
+                            )
+                        )
+                    ]
+                )
+
+                # 發送Quick Reply訊息
+                messaging_api.reply_message_with_http_info(
+                    ReplyMessageRequest(
+                        reply_token=event.reply_token,
+                        messages=[
+                            TextMessage(
+                                text="請選擇規劃方式",
+                                quick_reply=quick_reply
+                            )
+                        ]
+                    )
+                )
+            elif data == "action=direct_plan":
                 command_handler.handle_trip_command(event, None, line_id)
 
             elif data.startswith("cancel_"):
@@ -156,6 +202,59 @@ def handle_postback(event):
             app.logger.error(f"Error sending error message: {str(inner_e)}")
 
 
+@handler.add(MessageEvent, message=LocationMessageContent)
+def handle_location(event):
+    # 當用戶分享位置時
+    try:
+        line_id = event.source.user_id
+        # 準備位置資訊
+        location = {
+            "lat": event.message.latitude,
+            "lon": event.message.longitude,
+            "address": event.message.address,
+            "time": datetime.now(ZoneInfo('Asia/Taipei'))
+        }
+        # 儲存到MongoDB
+        trip_db.update_user_location(line_id, location)
+
+        if line_id in trip_user_states and trip_user_states[line_id] == "waiting_location":
+            with ApiClient(configuration) as api_client:
+                messaging_api = MessagingApi(api_client)
+                command_handler = CommandHandler(messaging_api, app.logger)
+                command_handler.handle_trip_command(event, None, line_id)
+
+            del trip_user_states[line_id]
+        else:
+            trip_db.update_user_location(line_id, location)
+            
+            with ApiClient(configuration) as api_client:
+                messaging_api = MessagingApi(api_client)
+                # 只回覆已記錄位置
+                messaging_api.reply_message(
+                    ReplyMessageRequest(
+                        reply_token=event.reply_token,
+                        messages=[TextMessage(
+                            text=f"已記錄起點位置: {location['address']}\n下次規劃將從此處出發")]
+                    )
+                )
+                if line_id in trip_user_states:
+                    del trip_user_states[line_id]
+
+    except Exception as e:
+        app.logger.error(f"處理位置訊息時時發生錯誤: {str(e)}")
+        try:
+            with ApiClient(configuration) as api_client:
+                messaging_api = MessagingApi(api_client)
+                messaging_api.reply_message(
+                    ReplyMessageRequest(
+                        reply_token=event.reply_token,
+                        messages=[TextMessage(text="處理位置訊息時發生錯誤，請稍後再試")]
+                    )
+                )
+        except Exception as inner_e:
+            app.logger.error(f"Error sending error message: {str(inner_e)}")
+
+
 @handler.add(MessageEvent, message=TextMessageContent)
 def handle_message(event):
     """處理使用者傳送的文字訊息
@@ -163,12 +262,12 @@ def handle_message(event):
     Args:
         event: LINE message event
     """
-    text_message = event.message.text
 
-    try:
-        line_id = event.source.user_id
-    except Exception:
-        line_id = 'none_line_id'
+    text_message = event.message.text
+    line_id = event.source.user_id
+
+    if line_id in trip_user_states:
+        del trip_user_states[line_id]
 
     if trip_db.record_user_input(line_id, text_message):
         print(f"已記錄{line_id}說:{text_message}")
