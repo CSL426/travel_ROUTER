@@ -4,6 +4,8 @@ from datetime import datetime, timedelta
 from math import ceil
 import random
 from typing import List, Dict, Optional, Tuple
+from zoneinfo import ZoneInfo
+
 from ..models.place import PlaceDetail
 from ..services.time_service import TimeService
 from ..services.geo_service import GeoService
@@ -46,6 +48,7 @@ class BasePlanningStrategy:
             geo_service=geo_service,
             travel_mode=config['travel_mode']  # 傳入交通方式
         )
+        self.config = config
 
         # 基本設定
         self.start_time = config['start_time']
@@ -55,8 +58,9 @@ class BasePlanningStrategy:
         self.end_location = config.get('end_location')
 
         # 時段管理
-        self.period_sequence = ['morning', 'lunch',
-                                'afternoon', 'dinner', 'night']
+        self.period_sequence = [
+            'morning', 'lunch', 'afternoon', 'dinner', 'night'
+        ]
         self.period_status = {period: False for period in self.period_sequence}
         self.current_period = 'morning'
 
@@ -73,7 +77,8 @@ class BasePlanningStrategy:
         self,
         current_location: PlaceDetail,
         available_places: List[PlaceDetail],
-        current_time: datetime
+        current_time: datetime,
+        trip_date: datetime,
     ) -> Optional[Tuple[PlaceDetail, Dict]]:
         """選擇下一個地點
 
@@ -99,7 +104,7 @@ class BasePlanningStrategy:
                 continue
 
             # 檢查營業時間
-            weekday = current_time.isoweekday()
+            weekday = trip_date.isoweekday()
             time_str = current_time.strftime(TimeService.TIME_FORMAT)
             if not place.is_open_at(weekday, time_str):
                 continue
@@ -162,7 +167,8 @@ class BasePlanningStrategy:
         current_location: PlaceDetail,
         available_places: List[PlaceDetail],
         current_time: datetime,
-        previous_trip: List[Dict] = None
+        previous_trip: List[Dict] = None,
+        requirement: List[Dict] = None,
     ) -> List[Dict]:
         """執行行程規劃
 
@@ -200,6 +206,18 @@ class BasePlanningStrategy:
         self.time_service.reset()
         self.visited_places.clear()
 
+        if requirement and requirement.get('date'):
+            current_year = datetime.now(ZoneInfo('Asia/Taipei')).year
+            trip_date = f"{current_year}-{requirement['date']}"
+            trip_date = datetime.strptime(trip_date, "%Y-%m-%d").replace(
+                tzinfo=ZoneInfo('Asia/Taipei')
+            )
+        else:
+            trip_date = datetime.now(
+                ZoneInfo('Asia/Taipei')) + timedelta(days=1)
+
+        original_start = None
+
         # 如果有之前的行程 先加入
         if previous_trip:
             self._itinerary.extend(previous_trip)
@@ -215,6 +233,17 @@ class BasePlanningStrategy:
                     self.time_service.lunch_completed = True
                     self.time_service.current_period = 'night'
 
+                if item['step'] == 0:
+                    original_start = item
+
+        # 設定終點
+        if requirement and requirement.get('end_point'):
+            self.end_location = self.geo_service.geocode(requirement.get('end_point'))
+            self.end_location = PlaceDetail(**self.end_location)
+        elif original_start:
+            # 如果有原始行程,用原始起點作為終點
+            self.end_location = self._convert_to_place_detail(original_start)
+
         # 加入起點(如果不是繼續規劃)
         if not previous_trip:
             start_item = self._create_itinerary_item(
@@ -225,7 +254,8 @@ class BasePlanningStrategy:
                     'duration_minutes': 0,
                     'distance_km': 0,
                     'transport_mode': self.travel_mode
-                }
+                },
+                trip_date=trip_date
             )
             self.visited_places.add(current_location.name)
             self._itinerary.append(start_item)
@@ -244,7 +274,8 @@ class BasePlanningStrategy:
             next_place = self.select_next_place(
                 current_loc,
                 remaining_places,
-                visit_time
+                visit_time,
+                trip_date
             )
 
             if not next_place:
@@ -263,9 +294,27 @@ class BasePlanningStrategy:
                 place.duration_min
             )
 
+            # 預估返回終點所需時間
+            to_home_info = self.geo_service.get_route(
+                origin={"lat": place.lat, "lon": place.lon},
+                destination={
+                    "lat": self.end_location.lat,
+                    "lon": self.end_location.lon
+                },
+                mode=self.travel_mode,
+                departure_time=departure_time
+            )
+            print(self.end_location)
+            print(1)
+
+            final_time = self._calculate_arrival_time(
+                departure_time,
+                to_home_info['duration_minutes']
+            )
+
             # 檢查是否超過結束時間
-            if departure_time > self.end_time:
-                print("已達每日結束時間,停止規劃")
+            if final_time > self.end_time:
+                print("加入此地點後會超過結束時間,直接返回終點")
                 break
 
             # 建立行程項目
@@ -273,7 +322,8 @@ class BasePlanningStrategy:
                 place,
                 arrival_time,
                 departure_time,
-                travel_info
+                travel_info,
+                trip_date
             )
             self._itinerary.append(itinerary_item)
 
@@ -316,7 +366,8 @@ class BasePlanningStrategy:
                 place=self.end_location,  # 使用設定的終點
                 arrival_time=final_arrival_time,
                 departure_time=final_arrival_time,
-                travel_info=final_travel_info
+                travel_info=final_travel_info,
+                trip_date=trip_date
             )
             self._itinerary.append(end_item)
             self.total_distance += final_travel_info['distance_km']
@@ -364,7 +415,8 @@ class BasePlanningStrategy:
         place: PlaceDetail,
         arrival_time: datetime,
         departure_time: datetime,
-        travel_info: Dict
+        travel_info: Dict,
+        trip_date: datetime = None,  # YYYY-MM-DD
     ) -> Dict:
         """建立行程項目
 
@@ -391,6 +443,10 @@ class BasePlanningStrategy:
                 - transport: Dict
                 - period: str
         """
+        # 如果沒有傳入日期 預設明天
+        if not trip_date:
+            trip_date = datetime.now(
+                ZoneInfo('Asia/Taipei')) + timedelta(days=1)
 
         # 將抵達時間四捨五入到最近的5分鐘
         rounded_minutes = ceil(arrival_time.minute / 5) * 5
@@ -406,7 +462,7 @@ class BasePlanningStrategy:
         rounded_departure = departure_time + time_diff
 
         # 取得當天的營業時間
-        weekday = arrival_time.isoweekday()  # 1-7
+        weekday = trip_date.isoweekday()
         day_hours = place.hours.get(weekday, [])
 
         # 找出符合抵達時間的營業時段
@@ -459,16 +515,19 @@ class BasePlanningStrategy:
 
         return {
             'step': len(self.visited_places),
+            'place_id': place.place_id,
             'name': place.name,
             'label': display_label,
             'hours': matching_hours,
             'lat': place.lat,
             'lon': place.lon,
+            'date': trip_date.strftime("%Y-%m-%d"),
             'start_time': rounded_arrival.strftime('%H:%M'),
             'end_time': rounded_departure.strftime('%H:%M'),
             'duration': place.duration_min,
             'transport': {
                 'mode': transport_chinese,
+                'mode_eng': transport_mode,
                 'travel_distance': travel_info.get('distance_km', 0),
                 'time': travel_info.get('duration_minutes', 20),
                 'period': travel_period,
@@ -478,53 +537,15 @@ class BasePlanningStrategy:
             'period': place.period,
         }
 
-    def is_feasible(self,
-                    place: PlaceDetail,
-                    current_location: PlaceDetail,
-                    current_time: datetime,
-                    travel_info: Dict) -> bool:
-        """檢查地點是否可以加入行程
-
-        檢查項目:
-        1. 是否有足夠的剩餘時間(含交通和停留)
-        2. 是否在營業時間內
-        3. 是否符合當前時段
-
-        Args:
-            place: PlaceDetail 要檢查的地點
-            current_location: PlaceDetail 當前位置
-            current_time: datetime 當前時間
-            travel_info: Dict 交通資訊
-
-        Returns:
-            bool True=可行 False=不可行
-        """
-        # 計算預計到達時間
-        arrival_time = self._calculate_arrival_time(
-            current_time,
-            travel_info['duration_minutes']
+    def _convert_to_place_detail(self, item: Dict) -> PlaceDetail:
+        """將行程項目轉換為PlaceDetail物件"""
+        return PlaceDetail(
+            name=item['name'],
+            lat=item['lat'],
+            lon=item['lon'],
+            duration_min=0,
+            label='交通樞紐',
+            period='night',
+            hours={i: [{'start': '00:00', 'end': '23:59'}]
+                   for i in range(1, 8)}
         )
-
-        # 計算預計離開時間
-        departure_time = self._calculate_departure_time(
-            arrival_time,
-            place.duration_min
-        )
-
-        # 檢查是否超過每日結束時間
-        if departure_time > self.end_time:
-            print("超過每日結束時間限制")
-            return False
-
-        # 檢查是否營業
-        weekday = arrival_time.isoweekday()
-        if not place.is_open_at(weekday, arrival_time.strftime('%H:%M')):
-            print("該時段未營業")
-            return False
-
-        # 檢查是否符合當前時段
-        if place.period != self.current_period:
-            print(f"不符合當前時段: {self.current_period}")
-            return False
-
-        return True

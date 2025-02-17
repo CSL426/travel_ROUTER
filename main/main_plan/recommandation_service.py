@@ -1,11 +1,9 @@
 from feature.llm.LLM import LLM_Manager
 from feature.retrieval.qdrant_search import qdrant_search
-from feature.retrieval.utils import jina_embedding, json2txt, qdrant_control
 from feature.plan.Contextual_Search_Main import filter_and_calculate_scores
 from feature.sql_csv import sql_csv
-from typing import Dict, List, Tuple, Any
 
-def recommandation(user_Q: str, config: Dict[str, str]) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
+def recommandation(user_Q: str, config: dict[str, str]) -> list[dict]:
     """
     處理用戶查詢並返回推薦結果以及查詢相關信息
     
@@ -16,11 +14,11 @@ def recommandation(user_Q: str, config: Dict[str, str]) -> Tuple[List[Dict[str, 
     Returns:
         Tuple[List[Dict], Dict]: 
             - 推薦的地點列表
-            - 查詢相關信息（用於存儲到MongoDB）
+            - 查詢相關信息(用於存儲到MongoDB)
     """
     # 初始化 LLM 物件
     LLM_obj = LLM_Manager(config['ChatGPT_api_key'])
-    weights = {'distance': 0.2, 'comments': 0.4, 'similarity': 0.4}
+    weights = {'distance': 0.2, 'comments': 0.3, 'similarity': 0.5}
     
     # 獲取 LLM 分析結果
     results = LLM_obj.Cloud_fun(user_Q)
@@ -77,5 +75,5 @@ if __name__ == "__main__":
     results, query_info = recommandation("請推薦好吃台北餐廳", config)
     print("推薦結果：")
     pprint(results, sort_dicts=False)
-    print("\n查詢資訊：")
+    print("\n查詢資訊 :")
     pprint(query_info, sort_dicts=False)

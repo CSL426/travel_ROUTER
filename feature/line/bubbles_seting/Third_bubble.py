@@ -1,7 +1,8 @@
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 def Third(data):
-    current_date = datetime.now().strftime("%Y/%m/%d")
+    current_date = datetime.now(ZoneInfo('Asia/Taipei')).strftime("%Y/%m/%d")
     
     # 定義顯示樣式
     location = {

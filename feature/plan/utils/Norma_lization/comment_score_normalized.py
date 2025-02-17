@@ -31,7 +31,7 @@ def normalize_and_match(points, extracted_data):
 
     # 只保留 points 中有的 placeID
     placeID_in_points = points_df["placeID"].unique()
-    filtered_extracted_df = extracted_df[extracted_df["placeID"].isin(placeID_in_points)]
+    filtered_extracted_df = extracted_df[extracted_df["placeID"].isin(placeID_in_points)].copy()
 
     # 對 "總體評價" 欄位進行標準化
     if "總體評價" in filtered_extracted_df.columns:

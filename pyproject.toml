@@ -6,7 +6,7 @@ authors = ["CSL426 <spark.cs.liao@gmail.com>"]
 packages = [
     {include = "feature"}, 
     {include = "main"},
-    {include = "database"}
+    {include = "data"},
 ]
 readme = "README.md"
 

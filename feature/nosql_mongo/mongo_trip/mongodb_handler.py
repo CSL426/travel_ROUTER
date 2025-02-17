@@ -1,8 +1,10 @@
 from datetime import datetime, UTC
 from typing import Dict, List, Optional
+from zoneinfo import ZoneInfo
+
 import pymongo
 from pymongo.errors import PyMongoError
-from .mongodb_manager import MongoDBManager
+from feature.nosql_mongo.mongo_trip.mongodb_manager import MongoDBManager
 
 
 class TripDBHandler:
@@ -34,9 +36,28 @@ class TripDBHandler:
             bool: 是否成功記錄
         """
         try:
+            skip_messages = [
+                "收藏店家:",
+                "顯示我的收藏",
+                "推薦其他店家",
+                "我想進行情境搜索",
+                "情境搜索說明",
+                "旅遊規劃說明",
+                "紀錄初始化",
+                "記錄初始化",
+                "移除",
+                "推薦其他店家",
+            ]
+
+            if any(input_text.startswith(msg) for msg in skip_messages):
+                return False  # 直接返回,不記錄
+
+            if input_text.startswith("旅遊推薦") and len(input_text) > 4:
+                input_text = input_text[4:]
+
             input_record = {
-                "timestamp": datetime.now(UTC),
-                "text": input_text
+                "timestamp": datetime.now(ZoneInfo('Asia/Taipei')),
+                "text": input_text if input_text.startswith("旅遊推薦") else input_text
             }
 
             result = self.db.user_preferences.update_one(
@@ -51,11 +72,98 @@ class TripDBHandler:
             print(f"記錄用戶輸入失敗: {str(e)}")
             return False
 
+    def update_user_dislike(
+        self,
+        line_id: str,
+        dislike_reason: str
+    ) -> bool:
+        """更新用戶不喜歡的項目
+
+        Args:
+            line_id: 用戶ID
+            dislike_reason: 不喜歡的原因(例如:"我不喜歡遼寧街夜市(夜市)")
+
+        Returns:
+            bool: 是否更新成功
+        """
+        try:
+            # 將新的不喜歡原因加入偏好列表
+            result = self.db.user_preferences.update_one(
+                {"line_id": line_id},
+                {
+                    "$push": {
+                        "input_history": {
+                            "timestamp": datetime.now(ZoneInfo('Asia/Taipei')),
+                            "text": dislike_reason
+                        }
+                    }
+                },
+                upsert=True
+            )
+            return result.modified_count > 0 or result.upserted_id is not None
+
+        except PyMongoError as e:
+            print(f"更新用戶偏好失敗: {str(e)}")
+            return False
+
+    def update_plan_restart_index(
+        self,
+        line_id: str,
+        plan_index: int,
+        restart_index: int,
+        button_id: str
+    ) -> bool:
+        try:
+            record = self.db.planner_records.find_one({
+                "line_id": line_id,
+                "plan_index": plan_index,
+            })
+
+            if not record:
+                print(f"找不到行程記錄 plan_index={plan_index}")
+                return False
+
+            print(f"目前record: {record}")  # debug記錄
+
+            if "clicked_buttons" not in record:
+                self.db.planner_records.update_one(
+                    {"line_id": line_id, "plan_index": plan_index},
+                    {"$set": {"clicked_buttons": []}}
+                )
+                print("初始化clicked_buttons陣列")
+
+            if button_id in record.get("clicked_buttons", []):
+                print(f"按鈕 {button_id} 已經按過")
+                return False
+
+            current_restart = record.get('restart_index', float('inf'))
+            print(f"比較 current: {current_restart}, new: {restart_index}")
+
+            update_data = {
+                "$push": {"clicked_buttons": button_id}
+            }
+
+            if restart_index < current_restart:
+                update_data["$set"] = {
+                    "restart_index": restart_index,
+                    "updated_at": datetime.now(ZoneInfo('Asia/Taipei'))
+                }
+                print(f"更新 restart_index 為 {restart_index}")
+
+            result = self.db.planner_records.update_one(
+                {"line_id": line_id, "plan_index": plan_index},
+                update_data
+            )
+            return result.modified_count > 0
+
+        except PyMongoError as e:
+            print(f"更新重啟點失敗: {str(e)}")
+            return False
+
     def save_plan(
         self,
         line_id: str,
         input_text: str,
-        restart_index: int,
         requirement: Dict,
         itinerary: List[Dict]
     ) -> Optional[int]:
@@ -83,12 +191,14 @@ class TripDBHandler:
             record = {
                 "line_id": line_id,
                 "plan_index": new_index,
-                "timestamp": datetime.now(UTC),
+                "timestamp": datetime.now(ZoneInfo('Asia/Taipei')),
                 "input_text": input_text,
                 "requirement": requirement,
-                "restart_index": restart_index,
+                # "restart_index": restart_index,
                 "itinerary": [{
                     "step": item["step"],
+                    "place_id": item["place_id"],
+                    "date": item["date"],
                     "name": item["name"],
                     "label": item["label"],
                     "lat": item["lat"],
@@ -250,7 +360,7 @@ class TripDBHandler:
                 {
                     "$set": {
                         "preferences_summary": summary,
-                        "last_summary_time": datetime.now(UTC)
+                        "last_summary_time": datetime.now(ZoneInfo('Asia/Taipei'))
                     }
                 },
                 upsert=True
