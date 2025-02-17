@@ -20,29 +20,19 @@ from main.main_plan.recommandation_service import recommandation
 user_states = {}  # 使用者狀態
 recent_recommendations = {}  # 最近推薦結果
 user_queries = {}  # 查詢紀錄
-
+user_locations = {}  # 儲存用戶位置信息
 
 class ScenarioHandler:
     """情境搜索功能處理器"""
 
     def __init__(self, messaging_api: MessagingApi, config: dict, logger=None):
-        """初始化
-
-        Args:
-            messaging_api: LINE Bot的MessagingApi實例
-            config: 設定檔內容
-            logger: 可選的logger實例
-        """
+        """初始化"""
         self.messaging_api = messaging_api
         self.config = config
         self.logger = logger
 
     def handle_scenario_search(self, event: MessageEvent):
-        """處理情境搜索請求
-
-        Args:
-            event: LINE message event
-        """
+        """處理情境搜索請求"""
         user_id = event.source.user_id
 
         try:
@@ -51,15 +41,15 @@ class ScenarioHandler:
             mongodb_obj.delete_user_record(user_id)
             mongodb_obj.close()
 
-            # 設定使用者狀態
+            # 設定使用者狀態為等待位置
             global user_states
-            user_states[user_id] = "waiting_for_query"
+            user_states[user_id] = "waiting_for_location"
 
-            # 發送提示訊息
+            # 發送請求位置訊息
             self.messaging_api.reply_message(
                 ReplyMessageRequest(
                     reply_token=event.reply_token,
-                    messages=[TextMessage(text="請輸入你的需求(例如:請推薦我淡水好吃的餐廳)")]
+                    messages=[TextMessage(text="請先分享您的位置，以便我們提供更精準的推薦\n\n若不方便分享位置，請輸入「跳過」繼續使用。")]
                 )
             )
 
@@ -68,18 +58,58 @@ class ScenarioHandler:
                 self.logger.error(f"處理情境搜索時發生錯誤: {str(e)}")
             self._send_error_message(event.reply_token)
 
-    def handle_user_query(self, event: MessageEvent):
-        """處理使用者的查詢輸入
+    def handle_location(self, event):
+        """處理用戶發送的位置訊息"""
+        user_id = event.source.user_id
+        
+        try:
+            # 儲存位置資訊
+            global user_locations
+            user_locations[user_id] = {
+                'latitude': event.message.latitude,
+                'longitude': event.message.longitude
+            }
 
-        Args:
-            event: LINE message event
-        """
+            # 更新狀態為等待查詢輸入
+            global user_states
+            user_states[user_id] = "waiting_for_query"
+
+            # 發送提示訊息
+            self.messaging_api.reply_message(
+                ReplyMessageRequest(
+                    reply_token=event.reply_token,
+                    messages=[TextMessage(text="已收到您的位置！\n請輸入您的需求（例如：請推薦我附近好吃的餐廳）")]
+                )
+            )
+
+        except Exception as e:
+            if self.logger:
+                self.logger.error(f"處理位置資訊時發生錯誤: {str(e)}")
+            self._send_error_message(event.reply_token)
+
+    def handle_user_query(self, event: MessageEvent):
+        """處理使用者的查詢輸入"""
         user_id = event.source.user_id
         user_text = event.message.text
 
-        # 檢查是否在等待輸入狀態
-        global user_states, recent_recommendations, user_queries
-        if user_id not in user_states or user_states[user_id] != "waiting_for_query":
+        # 檢查使用者狀態
+        global user_states
+        if user_id not in user_states:
+            return False
+
+        # 如果正在等待位置且用戶輸入"跳過"
+        if user_states[user_id] == "waiting_for_location" and user_text == "跳過":
+            user_states[user_id] = "waiting_for_query"
+            self.messaging_api.reply_message(
+                ReplyMessageRequest(
+                    reply_token=event.reply_token,
+                    messages=[TextMessage(text="請輸入您的需求（例如：請推薦我好吃的餐廳）")]
+                )
+            )
+            return True
+
+        # 如果不是在等待查詢狀態，返回
+        if user_states[user_id] != "waiting_for_query":
             return False
 
         # 檢查是否為特殊指令
@@ -89,7 +119,7 @@ class ScenarioHandler:
             self.messaging_api.reply_message(
                 ReplyMessageRequest(
                     reply_token=event.reply_token,
-                    messages=[TextMessage(text="請重新輸入你的需求(例如:請推薦我淡水好吃的餐廳)")]
+                    messages=[TextMessage(text="請重新輸入您的需求")]
                 )
             )
             return True
@@ -98,8 +128,11 @@ class ScenarioHandler:
             # 清除使用者狀態
             del user_states[user_id]
 
+            # 取得用戶位置資訊（如果有的話）
+            user_location = user_locations.get(user_id, None)
+            
             # 執行推薦
-            final_results, query_info = recommandation(user_text, self.config)
+            final_results, query_info = recommandation(user_text, self.config, user_location)
 
             # 儲存查詢資訊
             query_info["line_user_id"] = user_id
@@ -121,6 +154,11 @@ class ScenarioHandler:
                     messages=[flex_message]
                 )
             )
+
+            # 清除位置資訊
+            if user_id in user_locations:
+                del user_locations[user_id]
+
             return True
 
         except Exception as e:
@@ -132,11 +170,7 @@ class ScenarioHandler:
             return True
 
     def _send_error_message(self, reply_token: str):
-        """發送錯誤訊息
-
-        Args:
-            reply_token: LINE的回覆token
-        """
+        """發送錯誤訊息"""
         try:
             self.messaging_api.reply_message(
                 ReplyMessageRequest(
