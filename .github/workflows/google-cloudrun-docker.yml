@@ -6,10 +6,10 @@ on:
       - 'Release/CD'
 
 env:
-  PROJECT_ID: 'water-450809'
+  PROJECT_ID: 'tibame-travel-router'
   REGION: 'us-central1'
-  SERVICE: 'water-ok-service'
-  WORKLOAD_IDENTITY_PROVIDER: 'projects/321033627506/locations/global/workloadIdentityPools/water-pool/providers/ponpon-repo'
+  SERVICE: 'travel-router'
+  WORKLOAD_IDENTITY_PROVIDER: 'projects/617182251813/locations/global/workloadIdentityPools/travel-pool/providers/travel-oidc'
   LINE_CHANNEL_SECRET: ${{ secrets.LINE_CHANNEL_SECRET }}
   LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
   JINA_URL: ${{ secrets.JINA_URL }}
