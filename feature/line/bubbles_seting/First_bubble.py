@@ -1,8 +1,8 @@
 from datetime import datetime
-from typing import List
+from typing import List, Dict
 
 
-def First(data: List[dict], plan_index: int = 1):
+def First(data: List[Dict], plan_index: int = 1):
     current_date = datetime.strptime(
         data[0]['date'], "%Y-%m-%d").strftime("%Y/%m/%d")
 
@@ -11,18 +11,6 @@ def First(data: List[dict], plan_index: int = 1):
         "開車": "🚗",
         "騎自行車": "🚲",
         "步行": "🚶"
-    }
-
-    H = {
-        "type": "text",
-        "text": "00:00",
-        "size": "sm",
-        "spacing": "md",
-        "align": "center",
-        "flex": 2,
-        "adjustMode": "shrink-to-fit",
-        "color": "#666666",
-        "weight": "regular"
     }
 
     contents = []
@@ -34,23 +22,29 @@ def First(data: List[dict], plan_index: int = 1):
         else:
             location_url = f"https://www.google.com/maps/search/?api=1&query={data[i]['lat']},{data[i]['lon']}"
 
-        temp_H = H.copy()
+        time_text = ""
         # 設定停留區間
         if i == 0:
-            temp_H["text"] = data[i]['start_time']
+            time_text = data[i]['start_time']
         elif i == len(data) - 1:
-            temp_H["text"] = " " + data[i]['end_time']
+            time_text = " " + data[i]['end_time']
         else:
-            temp_H["text"] = " " + \
+            time_text = " " + \
                 '-'.join([data[i]['start_time'], data[i]['end_time']])
 
-        # 顯示下一個目的地的交通資訊
-        transport_info = {
-            "type": "box",
-            "layout": "horizontal",
-            "contents": [],
-            "height": "0px"
-        }
+        time_contents = []
+        time_contents.append(
+            {
+                "type": "text",
+                "text": time_text,
+                "size": "sm",
+                "align": "center",  # 單行文字置中
+                "flex": 1,
+                "adjustMode": "shrink-to-fit",
+                "color": "#666666",
+                "weight": "regular",
+            }
+        )
 
         # 如果不是最後一個地點，顯示到下一個地點的交通資訊
         if i < len(data) - 1:
@@ -58,69 +52,93 @@ def First(data: List[dict], plan_index: int = 1):
             transport_icon = transport_icons.get(
                 next_point['transport']['mode'], "🚗")
             transport_time = next_point['transport'].get('time', '15')
-            transport_info = {
+
+            # 交通時間
+            time_contents.append(
+                {
+                    "type": "text",
+                    "text": f"↓ {transport_icon} {transport_time}分鐘 ↓",
+                    "size": "xs",
+                    "align": "center",  # 單行文字置中
+                    "color": "#888888",
+                    "flex": 1,
+                }
+            )
+
+            time_box = {
                 "type": "box",
-                "layout": "horizontal",
-                "contents": [
-                    {
-                        "type": "text",
-                        "text": f"↓ {transport_icon} {transport_time}分鐘 ↓",
-                        "size": "xs",
-                        "color": "#888888",
-                        "flex": 5
-                    }
-                ],
-                "margin": "sm"
+                "layout": "vertical",
+                "contents": time_contents,
+                "alignItems": "center",
+                "flex": 2,
+                "justifyContent": "space-between",
+                # "width":"",
             }
+
+        elif i == len(data) - 1:
+            time_box = {
+                "type": "box",
+                "layout": "vertical",
+                "contents": time_contents,
+                "alignItems": "center",
+                "flex": 2
+            }
+
+        # time_box = {
+        #     "type": "box",
+        #     "layout": "vertical",  # 垂直排列
+        #     "contents": time_contents,
+        #     "alignItems": "center",  # 內容水平置中
+        #     "flex": 2,
+        # }
 
         location_container = {
             "type": "box",
-            "layout": "vertical",
+            "layout": "horizontal",
+            "spacing": "sm",
             "contents": [
+                time_box,
                 {
-                    "type": "box",
-                    "layout": "horizontal",
-                    "spacing": "lg",
-                    "contents": [
-                        temp_H,
-                        {
-                            "type": "text",
-                            "text": data[i]["name"],
-                            "size": "sm",
-                            "spacing": "md",
-                            "align": "start",
-                            "wrap": True,
-                            "flex": 3,
-                            "maxLines": 2,
-                            "weight": "regular",
-                            "color": "#555555",
-                            "action": {
-                                "type": "uri",
-                                "uri": location_url
-                            }
-                        },
-                        {
-                            "type": "text",
-                            "text": "×",
-                            "size": "md",
-                            "color": "#FF6B6B",
-                            "align": "center",
-                            "action": {
-                                "type": "postback",
-                                "label": " ",
-                                "data": f"cancel_{plan_index}_{data[i]['step']}_{data[i]['name']}_{data[i]['label']}"
-                            },
-                            "flex": 0,
-                            "weight": "bold"
-                        }
-                    ]
+                    "type": "text",
+                    "text": data[i]["name"],
+                    "size": "lg",
+                    "spacing": "md",
+                    "align": "start",
+                    "gravity": "center",
+                    "wrap": True,
+                    "flex": 4,
+                    "maxLines": 2,
+                    "weight": "regular",
+                    "color": "#555555",
+                    "action": {
+                            "type": "uri",
+                            "uri": location_url
+                    }
                 },
-                transport_info
+                {
+                    "type": "text",
+                    "text": "×",
+                    "size": "4xl",
+                    "color": "#FF6B6B",
+                    "align": "center",
+                    "gravity": "center",
+                    "action": {
+                            "type": "postback",
+                            "label": " ",
+                            "data": f"cancel_{plan_index}_{data[i]['step']}_{data[i]['name']}_{data[i]['label']}"
+                    },
+                    "flex": 0,
+                    "weight": "bold",
+                    "margin": "lg",
+                    # "offsetTop": "-3px",
+                },
             ],
-            "paddingAll": "sm",
+            "alignItems": "center",
+            "paddingAll": "none",
             "backgroundColor": "#FFFFFF",
-            "cornerRadius": "lg",
-            "borderWidth": "none"
+            "cornerRadius": "md",
+            "borderWidth": "none",
+            "height": "53px"
         }
 
         contents.append(location_container)
@@ -177,6 +195,7 @@ def First(data: List[dict], plan_index: int = 1):
                 }
             ]
         },
+        "size": "giga",
         "styles": {
             "body": {
                 "backgroundColor": "#F8F9FA"
@@ -188,7 +207,7 @@ def First(data: List[dict], plan_index: int = 1):
         "type": "box",
         "layout": "vertical",
         "spacing": "sm",
-        "margin": "md",
+        "margin": "lg",
         "contents": contents
     }
 
@@ -204,21 +223,9 @@ def First(data: List[dict], plan_index: int = 1):
                 "type": "button",
                 "style": "primary",
                 "action": {
-                    "type": "postback",
-                    "label": "收藏行程",
-                    "data": "save_schedule"
-                },
-                "color": "#FF8DA1",
-                "flex": 1,
-                "height": "sm"
-            },
-            {
-                "type": "button",
-                "style": "primary",
-                "action": {
                     "type": "uri",
                     "label": "地圖網址",
-                    "uri": "https://www.google.com/maps"
+                    "uri": generate_maps_url(data)
                 },
                 "color": "#5C7AEA",
                 "flex": 1,
@@ -234,35 +241,37 @@ def First(data: List[dict], plan_index: int = 1):
     return First_bubble
 
 
-def dir_uri(data):
-    directions_url = "https://www.google.com/maps/dir/?api=1"
+def generate_maps_url(data: List[Dict]) -> str:
+    """產生Google Maps導航URL
 
-    # 設定交通方式 (假設所有路段都用同一種交通方式)
-    if data:
-        directions_url += f"&travelmode={data[0]['transport']['mode_eng']}"
+    Args:
+        data: List[Dict] - 地點列表
 
-    # 設定起點 (origin) - 使用第一個地點
-    if data:
-        # 或使用 place_id: f"&origin=place_id:{data[0]['place_id']}"
-        directions_url += f"&origin={data[0]['name']}({data[0]['lat']},{data[0]['lon']})"
+    Returns:
+        str: 導航URL
+    """
+    import urllib.parse
 
-    # 初始化 waypoints 列表
-    waypoints = []
+    # 基本URL
+    base = "https://www.google.com/maps/dir/?api=1&language=zh-TW"
 
-    # 迴圈處理途經點 (waypoints) - 從第二個點到倒數第二個點
-    if len(data) > 2:  # 至少要有三個地點才能有途經點
-        for i in range(1, len(data) - 1):  # 從索引 1 到 倒數第二個索引
-            # 或使用經緯度: waypoints.append(f"{data[i]['lat']},{data[i]['lon']}")
-            waypoints.append(f"{data[i]['name']}({data[i]['lat']},{data[i]['lon']})")
+    # 交通方式
+    mode = data[0].get('transport', {}).get('mode_eng', 'driving')
+    url = f"{base}&travelmode={mode}"
 
-    # 組裝 waypoints 字串 (使用 "|" 連接，避免最後多一個 "|")
-    if waypoints:
-        directions_url += "&waypoints=" + "|".join(waypoints)
+    # 起點(經緯度,不加括號)
+    url += f"&origin={data[0]['lat']},{data[0]['lon']}"
 
-    # 設定終點 (destination) - 使用最後一個地點 (在 waypoints 設定之後)
-    if len(data) > 1:  # 至少要有兩個地點才能設定終點
-        # 或使用 place_id: f"&destination=place_id:{data[-1]['place_id']}"
-        directions_url += f"&destination={data[-1]['name']}({data[-1]['lat']},{data[-1]['lon']})"
+    # 中途點
+    if len(data) > 2:
+        waypoints = []
+        for place in data[1:-1]:
+            waypoints.append(f"{place['lat']},{place['lon']}")
 
-    print(directions_url)  # 印出最終的 URL 方便檢查
-    return directions_url
+        url += f"&waypoints={urllib.parse.quote('|'.join(waypoints))}"
+
+    # 終點(經緯度,不加括號)
+    if len(data) > 1:
+        url += f"&destination={data[-1]['lat']},{data[-1]['lon']}"
+    print(url)
+    return url

@@ -54,16 +54,18 @@ class CommandHandler:
 
         # 判斷記錄初始化指令
         # 只接受純"記錄初始化"五個字
-        if text == "記錄初始化" or text == "紀錄初始化":
+        if text in ["記錄初始化", "紀錄初始化"]:
             return "紀錄初始化", None
 
         # 其他指令直接返回原始文字,無參數
         return text, None
 
-    def handle_trip_command(self,
-                            event: MessageEvent,
-                            parameter: str,
-                            line_id: str):
+    def handle_trip_command(
+        self,
+        event: MessageEvent,
+        parameter: str,
+        line_id: str
+    ):
         """處理旅遊推薦指令
 
         Args:
@@ -72,7 +74,6 @@ class CommandHandler:
             line_id: 使用者LINE ID
         """
         try:
-
 
             latest = trip_db.get_latest_plan(line_id)
             if latest:
@@ -91,15 +92,17 @@ class CommandHandler:
                 "contents": [First(data, plan_index + 1)]
             }
 
-            flex_message = FlexMessage(
-                alt_text="一日遊行程",
-                contents=FlexContainer.from_dict(carousel)
-            )
+            messages = [
+                # TextMessage(text="規劃行程中，請稍候..."),
+                FlexMessage(
+                    alt_text="一日遊行程",
+                    contents=FlexContainer.from_dict(carousel)
+                )]
 
             self.messaging_api.reply_message_with_http_info(
                 ReplyMessageRequest(
                     reply_token=event.reply_token,
-                    messages=[flex_message]
+                    messages=messages
                 )
             )
         except Exception as e:
@@ -112,10 +115,12 @@ class CommandHandler:
                 )
             )
 
-    def handle_init_command(self,
-                            event: MessageEvent,
-                            line_id: str):
-        """處理紀錄初始化指令
+    def handle_init_command(
+        self,
+        event: MessageEvent,
+        line_id: str
+    ):
+        """處理記錄初始化指令
 
         Args:
             event: LINE message event
@@ -169,12 +174,12 @@ class CommandHandler:
             print(f"發送說明訊息失敗: {str(e)}")
 
 
-HELP_TEXT = """歡迎使用智慧旅遊助手!
-本系統提供兩種方式幫您探索台北:
+HELP_TEXT = """歡迎使用路遊憩!
+本系統提供兩種方式幫您探索雙北地區:
 
-旅遊規劃:為您安排完整的一日遊行程,只要分享您想去的地方和喜好即可。
+旅遊規劃:為您安排完整的一日遊行程，只要分享您想去的地方和喜好即可。
 
-情境搜索:當您想找特定類型的景點時,能提供更精準的推薦。
+情境搜索:當您想找特定類型的景點時，能提供更精準的推薦。
 
 請選擇功能選單或直接輸入您的旅遊需求開始使用。"""
 
@@ -193,9 +198,9 @@ TRIP_HELP = """✨ 旅遊規劃使用說明:
 3. 重新規劃
    - 文字輸入您新的需求，或點選 × 可以記錄不喜歡的地點
    - 下次規劃會自動避開相似景點
-   - 透過按鈕或文字再次呼叫2. 開始規劃
+   - 透過按鈕或文字再次呼叫規劃功能
 
-隨時都能重新規劃，也可以用「記錄初始化」清除歷史紀錄。"""
+隨時都能重新規劃，也可以用「紀錄初始化」清除歷史紀錄。"""
 
 SEARCH_HELP = """✨ 情境搜索使用方式:
 開始搜索:按下去之後開始情境搜索功能，需要您輸入需求，例如:我想要淡水的文青咖啡廳、我想要九份的好吃小吃店等等。

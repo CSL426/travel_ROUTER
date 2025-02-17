@@ -8,12 +8,13 @@
 
 from linebot.v3.messaging import MessagingApi, ReplyMessageRequest, TextMessage, FlexMessage, FlexContainer
 from linebot.v3.webhooks import MessageEvent
+from pprint import pprint
+
 from feature.nosql_mongo.mongo_rec.mongoDB_ctrl_disat import MongoDBManage_unsatisfied
 from feature.line.rec_bubble_setting.change_format import transform_location_data
 from feature.line.rec_bubble_setting.line_bubble_changer import generate_flex_messages
 from feature.line.rec_bubble_setting.query_metadata_enricher import enrich_query
 from main.main_plan.rerun_reccomend import rerun_rec
-from pprint import pprint
 
 
 class RecommendHandler:
@@ -58,38 +59,42 @@ class RecommendHandler:
 
             # 取得目前要加入 black_list 的 place_ids
             place_ids = list(transformed_data.keys())
-            
+
             # 修改 mongodb 操作部分
             mongodb_obj = MongoDBManage_unsatisfied(config)
             try:
                 mongodb_obj.test_connection()
-                original_query = user_queries.get(user_id, {}) #定位到最新的query_info
-                query_info = enrich_query(original_query, place_ids) #將再推薦的place id丟進去
-                if not mongodb_obj.check_user_exists(user_id): #判斷line_user
+                original_query = user_queries.get(
+                    user_id, {})  # 定位到最新的query_info
+                query_info = enrich_query(
+                    original_query, place_ids)  # 將再推薦的place id丟進去
+                if not mongodb_obj.check_user_exists(user_id):  # 判斷line_user
                     mongodb_obj.add_unsatisfied(query_info)
                 else:
                     mongodb_obj.update_blacklist(user_id, place_ids)
 
-                print(f"Original black list count:{len(original_query["black_list"])}")
-                print(f"Complete black list count:{len(query_info["black_list"])}")
+                print(
+                    f"Original black list count:{len(original_query["black_list"])}")
+                print(
+                    f"Complete black list count:{len(query_info["black_list"])}")
                 print(f"Place IDs being added: {place_ids}")
 
                 # 重新執行推薦
                 final_results = rerun_rec(query_info, config)
 
                 transformed_data = transform_location_data(final_results)
-                
-                recent_recommendations[user_id] = transformed_data
-                user_records = mongodb_obj.get_user_records(user_id)  # 返回 List[Dict]
-                user_queries[user_id] = user_records[0]  # 取出唯一的 Dict
 
+                recent_recommendations[user_id] = transformed_data
+                user_records = mongodb_obj.get_user_records(
+                    user_id)  # 返回 List[Dict]
+                user_queries[user_id] = user_records[0]  # 取出唯一的 Dict
 
                 flex_messages = generate_flex_messages(transformed_data)
                 flex_message = FlexMessage(
                     alt_text="為您推薦其他地點",
                     contents=FlexContainer.from_dict(flex_messages)
                 )
-                
+
                 messaging_api.reply_message(
                     ReplyMessageRequest(
                         reply_token=event.reply_token,

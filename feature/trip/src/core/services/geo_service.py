@@ -223,7 +223,7 @@ class GeoService:
 
         使用範例:
             >>> # 計算以台北車站為中心，10公里範圍的邊界
-            >>> center = {'lat': 25.0478, 'lon': 121.5170}
+            >>> center = {'lat': 25.0480194, 'lon': 121.5168608}
             >>> bounds = geo_service.calculate_bounds(center, 10)
         """
         if not self.validate_coordinates(center['lat'], center['lon']):
@@ -265,7 +265,7 @@ class GeoService:
             List[Dict]: 在範圍內的點的列表，每個點包含原始資料和距離
 
         使用範例:
-            >>> center = {'lat': 25.0478, 'lon': 121.5170}
+            >>> center = {'lat': 25.0480194, 'lon': 121.5168608}
             >>> points = [{'lat': 25.1, 'lon': 121.6}, ...]
             >>> nearby = geo_service.find_points_in_range(
                     center, points, 5
@@ -313,8 +313,8 @@ class GeoService:
             str: "緯度,經度" 格式的字串
 
         使用範例:
-            >>> coord_str = geo_service.format_coordinates(25.0478, 121.5170)
-            >>> print(coord_str)  # "25.0478,121.5170"
+            >>> coord_str = geo_service.format_coordinates(25.0480194, 121.5168608)
+            >>> print(coord_str)  # "25.0480194,121.5168608"
         """
         if not self.validate_coordinates(lat, lon):
             raise ValueError(f"無效的座標: lat={lat}, lon={lon}")
@@ -337,7 +337,7 @@ class GeoService:
             Optional[Dict]: 解析成功返回座標字典，失敗返回 None
 
         使用範例:
-            >>> coord = geo_service.parse_coordinates("25.0478, 121.5170")
+            >>> coord = geo_service.parse_coordinates("25.0480194, 121.5168608")
             >>> if coord:
             >>>     print(f"緯度: {coord['lat']}, 經度: {coord['lon']}")
         """

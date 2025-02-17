@@ -17,8 +17,8 @@ def create_mock_trip():
             'end_time': '09:00',
             'period': 'morning',
             'hours': {'1': [{'start': '00:00', 'end': '23:59'}]},  # 加入營業時間
-            'lat': 25.0478,  # 加入座標
-            'lon': 121.5170
+            'lat': 25.0480194,  # 加入座標
+            'lon': 121.5168608
         },
         {
             'step': 1,
