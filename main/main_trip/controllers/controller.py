@@ -52,6 +52,9 @@ class TripController:
 
             # 1. 記錄用戶輸入
             # trip_db.record_user_input(line_id, input_text)
+            
+            # 取得用戶的位置
+            user_location = trip_db.get_user_location(line_id)
 
             # 2. 取得之前的行程
             latest = trip_db.get_latest_plan(line_id=line_id)
@@ -74,6 +77,9 @@ class TripController:
             else:
                 restart_index = int(restart_index[0]) if restart_index else 0
 
+            if user_location:
+                base_requirement[0]["出發地點"] = user_location["address"]
+            
             # 5. 向量檢索
             placeIDs = self._vector_retrieval(period_describe)
 
@@ -275,8 +281,6 @@ class TripController:
         """
         # 取得歷史狀態
         history = trip_db.get_history_status(line_id)
-        # if not history:
-        #     return text
 
         # 需要整理就先整理和儲存
         if history["needs_summary"]:
