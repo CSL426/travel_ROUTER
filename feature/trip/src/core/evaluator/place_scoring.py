@@ -331,9 +331,6 @@ class PlaceScoring:
         # 先檢查是否營業
         if not self._check_business_hours(place, current_time):
             return 0.0
-        # is_open = place.is_open_at(weekday, time_str)
-        # if not is_open:
-        #     return 0.0
 
         # 檢查剩餘營業時間
         slots = place.hours.get(weekday, [])

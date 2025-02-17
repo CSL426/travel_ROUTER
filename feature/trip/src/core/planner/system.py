@@ -136,7 +136,8 @@ class TripPlanningSystem:
                 current_location=self.start_location,
                 available_places=available_places,
                 current_time=context['start_time'],
-                previous_trip=previous_trip[:restart_index] if previous_trip else None
+                previous_trip=previous_trip[:restart_index] if previous_trip else None,
+                requirement=requirement
             )
 
             # 記錄執行時間
@@ -148,48 +149,6 @@ class TripPlanningSystem:
             print(f"行程規劃失敗: {str(e)}")
             raise
 
-    def _prepare_planning_context(self, locations: List[PlaceDetail], requirement: Dict) -> Dict:
-        """準備規劃上下文
-
-        將所有規劃所需的資訊整理成統一的格式。主要處理：
-        1. 起點位置的設定
-        2. 時間格式的轉換
-        3. 其他相關參數的整理
-
-        Args:
-            locations: 已轉換為 PlaceDetail 的地點列表
-            requirement: 包含規劃需求的字典
-
-        Returns:
-            Dict: 完整的規劃上下文
-        """
-        # 從 requirement 中取得起點，如果沒有則使用預設值
-        start_point = requirement.get('start_point', "台北車站")
-
-        # 取得並轉換起點資訊
-        start_location = self._get_start_location(start_point)
-        if isinstance(start_location, dict):
-            start_location = PlaceDetail(**start_location)
-
-        # 準備完整的規劃上下文
-        context = {
-            'start_location': start_location,
-            'available_places': locations,
-            'start_time': datetime.strptime(
-                requirement['start_time'], '%H:%M'
-            ),
-            'end_time': datetime.strptime(
-                requirement['end_time'], '%H:%M'
-            ),
-            'travel_mode': requirement.get('transport_mode', 'driving'),
-            'theme': requirement.get('theme'),
-            'meal_times': {
-                'lunch': requirement.get('lunch_time'),
-                'dinner': requirement.get('dinner_time')
-            }
-        }
-
-        return context
 
     def print_itinerary(self, itinerary: List[Dict], show_navigation: bool = False) -> None:
         """輸出行程規劃結果
