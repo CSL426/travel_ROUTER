@@ -3,7 +3,7 @@ name: 'Build and Deploy to Cloud Run'
 on:
   push:
     branches:
-      - 'Release/CD'
+      - 'master'
 
 env:
   PROJECT_ID: 'tibame-travel-router'
