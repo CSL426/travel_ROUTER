@@ -40,7 +40,18 @@ trip_user_states = {}
 # 載入 .env 檔案中的環境變數
 config = dotenv_values("./.env")
 if len(config) == 0:
-    print('please check .env path')
+    config = {}
+    config['jina_url'] = os.getenv('jina_url')
+    config['jina_headers_Authorization'] = os.getenv('jina_headers_Authorization')
+    config['qdrant_url'] = os.getenv('qdrant_url')
+    config['qdrant_api_key'] = os.getenv('qdrant_api_key')
+    config['ChatGPT_api_key'] = os.getenv('ChatGPT_api_key')
+    config['LINE_CHANNEL_SECRET'] = os.getenv('LINE_CHANNEL_SECRET')
+    config['LINE_CHANNEL_ACCESS_TOKEN'] = os.getenv('LINE_CHANNEL_ACCESS_TOKEN')
+    config['GOOGLE_MAPS_API_KEY'] = os.getenv('GOOGLE_MAPS_API_KEY')
+    config['MONGODB_URI'] = os.getenv('MONGODB_URI')
+    print('use cloud run env')
+
 
 # 讀取 LINE 的環境變數
 LINE_CHANNEL_ACCESS_TOKEN = config["LINE_CHANNEL_ACCESS_TOKEN"]
