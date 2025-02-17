@@ -304,8 +304,6 @@ class BasePlanningStrategy:
                 mode=self.travel_mode,
                 departure_time=departure_time
             )
-            print(self.end_location)
-            print(1)
 
             final_time = self._calculate_arrival_time(
                 departure_time,
@@ -517,6 +515,7 @@ class BasePlanningStrategy:
             'step': len(self.visited_places),
             'place_id': place.place_id,
             'name': place.name,
+            'address': place.address,
             'label': display_label,
             'hours': matching_hours,
             'lat': place.lat,

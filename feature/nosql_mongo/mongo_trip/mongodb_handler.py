@@ -1,5 +1,5 @@
 from datetime import datetime, UTC
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 from zoneinfo import ZoneInfo
 
 import pymongo
@@ -45,15 +45,22 @@ class TripDBHandler:
                 "旅遊規劃說明",
                 "紀錄初始化",
                 "記錄初始化",
+                "紀錄初始化",
                 "移除",
                 "推薦其他店家",
             ]
 
+            prefixes = ["旅遊規劃", "旅遊推薦"]
+            if input_text in prefixes:
+                return False
+
             if any(input_text.startswith(msg) for msg in skip_messages):
                 return False  # 直接返回,不記錄
 
-            if input_text.startswith("旅遊推薦") and len(input_text) > 4:
-                input_text = input_text[4:]
+            for prefix in prefixes:
+                if input_text.startswith(prefix):
+                    input_text = input_text[len(prefix):].strip()
+                    break
 
             input_record = {
                 "timestamp": datetime.now(ZoneInfo('Asia/Taipei')),
@@ -158,6 +165,45 @@ class TripDBHandler:
 
         except PyMongoError as e:
             print(f"更新重啟點失敗: {str(e)}")
+            return False
+
+    def update_user_location(
+        self,
+        line_id: str,
+        location: Dict[str, Any]
+    ) -> bool:
+        """更新用戶的位置資訊
+
+        Args:
+            line_id: LINE用戶ID
+            location: 位置資訊字典
+                {
+                    "lat": float - 緯度,
+                    "lon": float - 經度, 
+                    "name": str - 地址名稱
+                }
+
+        Returns:
+            bool: 是否成功更新
+        """
+        try:
+            result = self.db.user_preferences.update_one(
+                {"line_id": line_id},
+                {
+                    "$set": {
+                        "last_location": {
+                            "lat": float(location["lat"]),
+                            "lon": float(location["lon"]),
+                            "address": location["address"]
+                        }
+                    }
+                },
+                upsert=True
+            )
+            return result.modified_count > 0 or result.upserted_id is not None
+
+        except Exception as e:
+            print(f"更新用戶位置失敗: {str(e)}")
             return False
 
     def save_plan(
@@ -265,6 +311,34 @@ class TripDBHandler:
             )
         except PyMongoError as e:
             print(f"取得最新規劃失敗: {str(e)}")
+            return None
+
+    def get_user_location(
+        self,
+        line_id: str
+    ) -> Optional[Dict[str, Any]]:
+        """取得用戶最後記錄的位置
+
+        Args:
+            line_id: LINE用戶ID
+
+        Returns:
+            Optional[Dict]: 位置資訊字典,無記錄時返回None 
+                {
+                    "lat": float - 緯度,
+                    "lon": float - 經度,
+                    "name": str - 地址名稱
+                }
+        """
+        try:
+            record = self.db.user_preferences.find_one(
+                {"line_id": line_id},
+                {"last_location": 1, "_id": 0}
+            )
+            return record.get("last_location") if record else None
+
+        except Exception as e:
+            print(f"取得用戶位置失敗: {str(e)}")
             return None
 
     def get_plan_by_index(

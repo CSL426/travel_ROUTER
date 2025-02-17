@@ -149,7 +149,6 @@ class TripPlanningSystem:
             print(f"行程規劃失敗: {str(e)}")
             raise
 
-
     def print_itinerary(self, itinerary: List[Dict], show_navigation: bool = False) -> None:
         """輸出行程規劃結果
 
@@ -206,8 +205,9 @@ class TripPlanningSystem:
         # 準備預設的起點資料
         default_location = {
             'name': '台北車站',
-            'lat': 25.0478,
-            'lon': 121.5170,
+            'address': '台北市中正區北平西路3號100臺灣',
+            'lat': 25.0480194,
+            'lon': 121.5168608,
             'duration_min': 0,
             'label': '交通樞紐',
             'period': self.time_service.get_time_period(self.start_time),

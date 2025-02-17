@@ -29,6 +29,12 @@ class PlaceDetail(BaseModel):
         examples=["台北101", "故宮博物院"]
     )
 
+    address: Optional[str] = Field(
+        default="",  # 設定預設值為None
+        description="地點地址",
+        examples=["台北市中正區北平西路3號"]
+    )
+
     rating: float = Field(
         ge=0.0,               # 最小值
         le=5.0,               # 最大值
@@ -99,7 +105,17 @@ class PlaceDetail(BaseModel):
         # 為了相容性,確保 duration_min 也有值
         data['duration_min'] = data['duration']
 
+        if 'address' not in data:
+            data['address'] = ""
+
         super().__init__(**data)
+
+    @field_validator('address')
+    def validate_address(cls, v: Optional[str]) -> str:
+        """驗證地址格式"""
+        if v is None:
+            return ""
+        return str(v)  # 確保轉為字串
 
     @field_validator('period')
     def validate_period(cls, v: str) -> str:

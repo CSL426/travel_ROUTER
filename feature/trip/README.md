@@ -11,8 +11,8 @@ result = TripPlanningSystem().plan_trip(
    locations=[{
        'name': '地點名稱',
        'rating': 4.5,
-       'lat': 25.0478,
-       'lon': 121.5170,
+       'lat': 25.0480194,
+       'lon': 121.5168608,
        'duration': 60,     # 停留時間(分鐘)
        'label': '景點',    # 景點/餐廳
        'period': 'morning',# 時段標記

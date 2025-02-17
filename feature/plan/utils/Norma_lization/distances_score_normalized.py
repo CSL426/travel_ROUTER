@@ -26,7 +26,7 @@ def calculate_reverse_normalized_distances_no_threshold(points, user_location):
 if __name__ == "__main__":
     # 測試數據
     points = [
-        {'placeID': 1, 'lon': 121.5171, 'lat': 25.0478},
+        {'placeID': 1, 'lon': 121.51686081, 'lat': 25.0480194},
         {'placeID': 2, 'lon': 121.5314, 'lat': 25.0645},
         {'placeID': 3, 'lon': 121.5078, 'lat': 25.0339},
         {'placeID': 4, 'lon': 121.5289, 'lat': 25.0356},
@@ -45,7 +45,7 @@ if __name__ == "__main__":
             "時間": "10:00",
             "類別": "餐廳",
             "預算": 700,
-            "出發地": (25.0478, 121.5171),
+            "出發地": (25.0480194, 121.51686081),
             "交通類別": "步行"
         }
     ]
