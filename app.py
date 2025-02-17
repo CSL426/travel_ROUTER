@@ -34,7 +34,7 @@ from feature.line.handlers import (
     recent_recommendations,
 )
 from feature.nosql_mongo.mongo_trip.db_helper import trip_db
-
+import os
 trip_user_states = {}
 
 # 載入 .env 檔案中的環境變數
