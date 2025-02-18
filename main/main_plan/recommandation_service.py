@@ -44,10 +44,11 @@ def recommandation(user_Q: str, config: dict[str, str], user_location: Optional[
         print("LLM 返回 none，進行位置判斷")
         if is_in_new_taipei(user_location['latitude'], user_location['longitude']):
             print("用戶在新北市範圍內，使用用戶位置")
-            user_requirements[0]["出發地點"] = user_location
+            location_list = [user_location['latitude'], user_location['longitude']]
+            user_requirements[0]["出發地點"] = location_list
         else:
             print("用戶不在新北市範圍內，使用台北車站位置")
-            user_requirements[0]["出發地點"] = (25.0478, 121.5171)
+            user_requirements[0]["出發地點"] = [25.0478, 121.5171]
     else:
         user_requirements[0]["出發地點"]
         print("使用 LLM 返回的特定位置")
