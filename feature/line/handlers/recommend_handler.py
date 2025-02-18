@@ -82,6 +82,14 @@ class RecommendHandler:
                 # 重新執行推薦
                 final_results = rerun_rec(query_info, config)
 
+                # 處理沒有推薦結果的情況
+                if not final_results:
+                    self.messaging_api.reply_message(
+                        ReplyMessageRequest(
+                            reply_token=event.reply_token,
+                            messages=[TextMessage(text="已經沒有可以推薦的了")]
+                        )
+                    ) 
                 transformed_data = transform_location_data(final_results)
 
                 recent_recommendations[user_id] = transformed_data
