@@ -24,15 +24,15 @@ from linebot.v3.webhooks import (
     LocationMessageContent,
 )
 
-from feature.line import RichMenuManager
-from feature.line.handlers import (
-    CommandHandler,
-    FavoriteHandler,
-    RecommendHandler,
+from feature.line.rich_menu import RichMenuManager
+from feature.line.handlers.command_handler import CommandHandler
+from feature.line.handlers.favorite_handler import FavoriteHandler
+from feature.line.handlers.recommend_handler import RecommendHandler
+from feature.line.handlers.scenario_handler import (
     ScenarioHandler,
     user_states,
     user_queries,
-    recent_recommendations,
+    recent_recommendations
 )
 from feature.nosql_mongo.mongo_trip.db_helper import trip_db
 import os
