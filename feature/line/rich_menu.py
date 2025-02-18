@@ -309,7 +309,7 @@ class RichMenuManager:
 
         # 加入icon
         travel_icon = Image.open(
-            'icons/travel.png').resize((button_height, button_height))
+            'data/icons/travel.png').resize((button_height, button_height))
         if 'A' in travel_icon.getbands():
             img.paste(travel_icon, (250, y_start), travel_icon)
 
@@ -327,7 +327,7 @@ class RichMenuManager:
 
         # 加入icon
         reset_icon = Image.open(
-            'icons/reset.png').resize((button_height, button_height))
+            'data/icons/reset.png').resize((button_height, button_height))
         if 'A' in reset_icon.getbands():
             img.paste(reset_icon, (1000, y_start), reset_icon)
 
@@ -344,7 +344,7 @@ class RichMenuManager:
 
         # 加入icon
         help_icon = Image.open(
-            'icons/help.png').resize((button_height, button_height))
+            'data/icons/help.png').resize((button_height, button_height))
         if 'A' in help_icon.getbands():
             img.paste(help_icon, (1750, y_start), help_icon)
 
@@ -390,7 +390,7 @@ class RichMenuManager:
 
         # 加入icon
         search_icon = Image.open(
-            'icons/search.png').resize((button_height, button_height))
+            'data/icons/search.png').resize((button_height, button_height))
         if 'A' in search_icon.getbands():
             img.paste(search_icon, (250, y_start), search_icon)
 
@@ -408,7 +408,7 @@ class RichMenuManager:
 
         # 加入icon
         favorite_icon = Image.open(
-            'icons/favorite.png').resize((button_height, button_height))
+            'data/icons/favorite.png').resize((button_height, button_height))
         if 'A' in favorite_icon.getbands():
             img.paste(favorite_icon, (1000, y_start), favorite_icon)
 
@@ -425,7 +425,7 @@ class RichMenuManager:
 
         # 加入icon
         help_icon = Image.open(
-            'icons/help.png').resize((button_height, button_height))
+            'data/icons/help.png').resize((button_height, button_height))
         if 'A' in help_icon.getbands():
             img.paste(help_icon, (1750, y_start), help_icon)
 
