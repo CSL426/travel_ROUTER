@@ -14,10 +14,10 @@ def rerun_rec(query_info: Dict[str, Any], config: Dict[str, str]) -> List[Dict[s
         config: 配置信息
         
     返回:
-        List[Dict[str, Any]]: 推薦的地點列表
+        List[Dict[str, Any]]: 推薦的地點列表（可能為空）
     """
     weights = {'distance': 0.2, 'comments': 0.4, 'similarity': 0.4}
-    print("1. MongoDB black_list:", query_info["black_list"])
+
     # 向量搜索，直接在此階段使用黑名單過濾
     qdrant_obj = qdrant_search(
         collection_name='view_restaurant',

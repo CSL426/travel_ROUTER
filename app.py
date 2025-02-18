@@ -21,6 +21,7 @@ from linebot.v3.webhooks import (
     TextMessageContent,
     LocationMessageContent,
     PostbackEvent,
+    LocationMessageContent,
 )
 
 from feature.line import RichMenuManager
@@ -357,6 +358,32 @@ def handle_message(event):
         except Exception as inner_e:
             app.logger.error(f"Error sending error message: {str(inner_e)}")
 
+@handler.add(MessageEvent, message=LocationMessageContent)
+def handle_location(event):
+    """處理用戶發送的位置訊息"""
+    try:
+        with ApiClient(configuration) as api_client:
+            messaging_api = MessagingApi(api_client)
+            scenario_handler = ScenarioHandler(messaging_api, config, app.logger)
+            
+            # 檢查用戶是否在等待位置狀態
+            user_id = event.source.user_id
+            if user_id in user_states and user_states[user_id] == "waiting_for_location":
+                scenario_handler.handle_location(event)
+    except Exception as e:
+        app.logger.error(f"處理位置訊息時發生錯誤: {str(e)}")
+        try:
+            with ApiClient(configuration) as api_client:
+                messaging_api = MessagingApi(api_client)
+                messaging_api.reply_message(
+                    ReplyMessageRequest(
+                        reply_token=event.reply_token,
+                        messages=[TextMessage(text="處理位置資訊時發生錯誤，請稍後再試")]
+                    )
+                )
+        except Exception as inner_e:
+            app.logger.error(f"發送錯誤訊息失敗: {str(inner_e)}")
+            
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=8080)
