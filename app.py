@@ -370,13 +370,6 @@ def handle_location(event):
             user_id = event.source.user_id
             if user_id in user_states and user_states[user_id] == "waiting_for_location":
                 scenario_handler.handle_location(event)
-            else:
-                messaging_api.reply_message(
-                    ReplyMessageRequest(
-                        reply_token=event.reply_token,
-                        messages=[TextMessage(text="目前不需要位置資訊，請依照提示進行操作。")]
-                    )
-                )
     except Exception as e:
         app.logger.error(f"處理位置訊息時發生錯誤: {str(e)}")
         try:
