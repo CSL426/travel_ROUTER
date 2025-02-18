@@ -3,7 +3,7 @@ from feature.llm.LLM import LLM_Manager
 from feature.retrieval.qdrant_search import qdrant_search
 from feature.plan.Contextual_Search_Main import filter_and_calculate_scores
 from feature.sql_csv import sql_csv
-from check_location import is_in_new_taipei
+from main.main_plan.check_location import is_in_new_taipei
 from pprint import pprint
 
 def recommandation(user_Q: str, config: dict[str, str], user_location: Optional[Dict[str, float]] = None) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
@@ -25,7 +25,7 @@ def recommandation(user_Q: str, config: dict[str, str], user_location: Optional[
     print("用戶位置:", user_location)
     # 初始化 LLM 物件
     LLM_obj = LLM_Manager(config['ChatGPT_api_key'])
-    weights = {'distance': 0.1, 'comments': 0.3, 'similarity': 0.6}
+    weights = {'distance': 0.2, 'comments': 0.4, 'similarity': 0.4}
     
     
     # 獲取 LLM 分析結果
@@ -36,6 +36,7 @@ def recommandation(user_Q: str, config: dict[str, str], user_location: Optional[
     special_requirements = results[1]  # LLM解析資料:確認是否具有特殊要求
     user_requirements = results[2]  # LLM解析資料:客戶基本要求資料
 
+    user_requirements[0]["可接受距離門檻(KM)"] = 2
     pprint(f"出發地點:{user_requirements[0]["出發地點"]}")
     
     print("\n=== 位置判斷開始 ===")
@@ -53,7 +54,7 @@ def recommandation(user_Q: str, config: dict[str, str], user_location: Optional[
 
     print("最終使用的位置:", user_requirements[0]["出發地點"])
 
-    user_requirements[0]["可接受距離門檻(KM)"] = 5
+    
     # 向量搜索
     qdrant_obj = qdrant_search(
         collection_name='view_restaurant',
@@ -87,7 +88,10 @@ def recommandation(user_Q: str, config: dict[str, str], user_location: Optional[
         "black_list": set(),  # 初始化空的黑名單集合
         "user_location": user_location  # 儲存用戶位置信息
     }
-    
+    # 如果沒有結果，返回空列表和 None
+    if not final_results:
+        return [], None
+
     return final_results, query_info
 
 if __name__ == "__main__":

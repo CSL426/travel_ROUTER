@@ -7,7 +7,7 @@
 3. 處理其他推薦請求
 """
 
-from linebot.v3.messaging import MessagingApi, ReplyMessageRequest, TextMessage, FlexMessage, FlexContainer
+from linebot.v3.messaging import MessagingApi, ReplyMessageRequest, TextMessage, FlexMessage, FlexContainer, QuickReply, QuickReplyItem, MessageAction, LocationAction  
 from linebot.v3.webhooks import MessageEvent
 from pprint import pprint
 
@@ -45,11 +45,33 @@ class ScenarioHandler:
             global user_states
             user_states[user_id] = "waiting_for_location"
 
-            # 發送請求位置訊息
+            # 建立Quick Reply項目
+            quick_reply = QuickReply(
+                items=[
+                    QuickReplyItem(
+                        action=LocationAction(
+                            label="分享位置"
+                        )
+                    ),
+                    QuickReplyItem(
+                        action=MessageAction(
+                            label="跳過",
+                            text="跳過"
+                        )
+                    )
+                ]
+            )
+
+            # 發送帶有Quick Reply的訊息
             self.messaging_api.reply_message(
                 ReplyMessageRequest(
                     reply_token=event.reply_token,
-                    messages=[TextMessage(text="請先分享您的位置，以便我們提供更精準的推薦\n\n若不方便分享位置，請輸入「跳過」繼續使用。")]
+                    messages=[
+                        TextMessage(
+                            text="請先分享您的位置，以便我們提供更精準的推薦\n\n若不方便分享位置，請輸入「跳過」繼續使用。",
+                            quick_reply=quick_reply
+                        )
+                    ]
                 )
             )
 
@@ -87,7 +109,7 @@ class ScenarioHandler:
                 self.logger.error(f"處理位置資訊時發生錯誤: {str(e)}")
             self._send_error_message(event.reply_token)
 
-    def handle_user_query(self, event: MessageEvent):
+    def handle_user_query(self, event: MessageEvent) -> bool:   # 確保方法名稱完全一致
         """處理使用者的查詢輸入"""
         user_id = event.source.user_id
         user_text = event.message.text
@@ -96,17 +118,41 @@ class ScenarioHandler:
         global user_states
         if user_id not in user_states:
             return False
-
-        # 如果正在等待位置且用戶輸入"跳過"
-        if user_states[user_id] == "waiting_for_location" and user_text == "跳過":
-            user_states[user_id] = "waiting_for_query"
-            self.messaging_api.reply_message(
-                ReplyMessageRequest(
-                    reply_token=event.reply_token,
-                    messages=[TextMessage(text="請輸入您的需求（例如：請推薦我好吃的餐廳）")]
-                )
+        quick_reply = QuickReply(
+                items=[
+                    QuickReplyItem(
+                        action=LocationAction(
+                            label="分享位置"
+                        )
+                    ),
+                    QuickReplyItem(
+                        action=MessageAction(
+                            label="跳過",
+                            text="跳過"
+                        )
+                    )
+                ]
             )
-            return True
+        # 如果正在等待位置且用戶輸入"跳過"
+        if user_states[user_id] == "waiting_for_location":
+            if user_text.replace(" ", "") == "跳過" :
+                user_states[user_id] = "waiting_for_query"
+                self.messaging_api.reply_message(
+                    ReplyMessageRequest(
+                        reply_token=event.reply_token,
+                        messages=[TextMessage(text="請輸入您的需求（例如：請推薦我好吃的餐廳）")]
+                    )
+                )
+                return True
+            else:
+                # 如果不是"跳過"且沒有提供位置，持續要求位置
+                self.messaging_api.reply_message(
+                    ReplyMessageRequest(
+                        reply_token=event.reply_token,
+                        messages=[TextMessage(text="請分享您的位置，以便我們提供更精準的推薦\n\n若不方便分享位置，請輸入「跳過」繼續使用。",quickReply=quick_reply)]
+                    )
+                )
+                return True
 
         # 如果不是在等待查詢狀態，返回
         if user_states[user_id] != "waiting_for_query":
@@ -134,6 +180,18 @@ class ScenarioHandler:
             # 執行推薦
             final_results, query_info = recommandation(user_text, self.config, user_location)
 
+            # 處理沒有推薦結果的情況
+            if not final_results:
+                self.messaging_api.reply_message(
+                    ReplyMessageRequest(
+                        reply_token=event.reply_token,
+                        messages=[TextMessage(text="我找過了，真的沒得推薦")]
+                    )
+                )
+                # 清除位置資訊
+                if user_id in user_locations:
+                    del user_locations[user_id]
+                return True
             # 儲存查詢資訊
             query_info["line_user_id"] = user_id
             user_queries[user_id] = query_info
