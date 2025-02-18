@@ -19,7 +19,7 @@ def plan_basic_req_extractor(basic_req:list[dict], debuger: bool=False):
             '預算': basic_req['預算'] if is_float(basic_req['預算']) else 'none', 
 
             # 若無則給 預設值
-            '出發地點': basic_req['出發地點'] if is_valid_lat_lon(basic_req['出發地點']) else (25.0418, 121.5654),
+            '出發地點': basic_req['出發地點'] if is_valid_lat_lon(basic_req['出發地點']) else 'none',
             '可接受距離門檻(KM)': basic_req['可接受距離門檻(KM)'] if is_float(basic_req['可接受距離門檻(KM)']) else 30,   
             '交通方式': str(basic_req['交通方式']) if basic_req['交通方式'] in ['大眾運輸','開車','騎自行車','步行'] else '大眾運輸', 
         }]
