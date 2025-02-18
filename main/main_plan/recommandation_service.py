@@ -40,9 +40,11 @@ def recommandation(user_Q: str, config: dict[str, str], user_location: Optional[
     pprint(f"出發地點:{user_requirements[0]["出發地點"]}")
     
     print("\n=== 位置判斷開始 ===")
+
     if user_requirements[0]["出發地點"] == "none":
         print("LLM 返回 none，進行位置判斷")
-        if is_in_new_taipei(user_location['latitude'], user_location['longitude']):
+        if user_location is not None:
+            is_in_new_taipei(user_location['latitude'], user_location['longitude'])
             print("用戶在新北市範圍內，使用用戶位置")
             location_list = [user_location['latitude'], user_location['longitude']]
             user_requirements[0]["出發地點"] = location_list
