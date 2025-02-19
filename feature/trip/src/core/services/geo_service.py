@@ -6,7 +6,7 @@ import math
 import googlemaps
 from ..models.place import PlaceDetail
 from ..utils.cache_decorator import geo_cache
-from ...config import GOOGLE_MAPS_API_KEY
+from ...config.config import GOOGLE_MAPS_API_KEY
 
 
 class GeoService:
