@@ -15,7 +15,7 @@ from linebot.v3.messaging import (
 )
 from linebot.v3.webhooks import MessageEvent
 from typing import Tuple
-from feature.line.bubbles_seting import First
+from feature.line.bubbles_seting.First_bubble import First
 from feature.nosql_mongo.mongo_trip.db_helper import trip_db
 from main.main_trip.trip_service import run_trip_planner
 

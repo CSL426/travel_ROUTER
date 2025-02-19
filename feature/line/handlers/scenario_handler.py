@@ -36,11 +36,6 @@ class ScenarioHandler:
         user_id = event.source.user_id
 
         try:
-            # 初始化並清除舊記錄
-            mongodb_obj = MongoDBManage_unsatisfied(self.config)
-            mongodb_obj.delete_user_record(user_id)
-            mongodb_obj.close()
-
             # 設定使用者狀態為等待位置
             global user_states
             user_states[user_id] = "waiting_for_location"
@@ -74,6 +69,12 @@ class ScenarioHandler:
                     ]
                 )
             )
+            
+            # 初始化並清除舊記錄
+            mongodb_obj = MongoDBManage_unsatisfied(self.config)
+            mongodb_obj.delete_user_record(user_id)
+            mongodb_obj.close()
+
 
         except Exception as e:
             if self.logger:

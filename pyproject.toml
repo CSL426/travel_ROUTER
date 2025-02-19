@@ -2,7 +2,7 @@
 name = "travel-router"
 version = "0.1.0"
 description = ""
-authors = ["CSL426 <spark.cs.liao@gmail.com>"]
+authors = ["travel_router_team"]
 packages = [
     {include = "feature"}, 
     {include = "main"},

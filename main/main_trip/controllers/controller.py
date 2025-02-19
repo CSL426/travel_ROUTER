@@ -9,8 +9,7 @@ from feature.llm.LLM import LLM_Manager
 from feature.retrieval.qdrant_search import qdrant_search
 from feature.sql_csv.sql_csv import pandas_search
 from feature.nosql_mongo.mongo_trip.db_helper import trip_db
-from feature.trip import TripPlanningSystem
-
+from feature.trip.trip import TripPlanningSystem
 
 class TripController:
     """行程規劃系統控制器"""
