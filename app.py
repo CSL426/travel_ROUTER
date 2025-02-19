@@ -24,15 +24,15 @@ from linebot.v3.webhooks import (
     LocationMessageContent,
 )
 
-from feature.line import RichMenuManager
-from feature.line.handlers import (
-    CommandHandler,
-    FavoriteHandler,
-    RecommendHandler,
+from feature.line.rich_menu import RichMenuManager
+from feature.line.handlers.command_handler import CommandHandler
+from feature.line.handlers.favorite_handler import FavoriteHandler
+from feature.line.handlers.recommend_handler import RecommendHandler
+from feature.line.handlers.scenario_handler import (
     ScenarioHandler,
     user_states,
     user_queries,
-    recent_recommendations,
+    recent_recommendations
 )
 from feature.nosql_mongo.mongo_trip.db_helper import trip_db
 import os
@@ -214,58 +214,6 @@ def handle_postback(event):
             app.logger.error(f"Error sending error message: {str(inner_e)}")
 
 
-@handler.add(MessageEvent, message=LocationMessageContent)
-def handle_location(event):
-    # 當用戶分享位置時
-    try:
-        line_id = event.source.user_id
-        # 準備位置資訊
-        location = {
-            "lat": event.message.latitude,
-            "lon": event.message.longitude,
-            "address": event.message.address,
-            "time": datetime.now(ZoneInfo('Asia/Taipei'))
-        }
-        # 儲存到MongoDB
-        trip_db.update_user_location(line_id, location)
-
-        if line_id in trip_user_states and trip_user_states[line_id] == "waiting_location":
-            with ApiClient(configuration) as api_client:
-                messaging_api = MessagingApi(api_client)
-                command_handler = CommandHandler(messaging_api, app.logger)
-                command_handler.handle_trip_command(event, None, line_id)
-
-            del trip_user_states[line_id]
-        else:
-            trip_db.update_user_location(line_id, location)
-            
-            with ApiClient(configuration) as api_client:
-                messaging_api = MessagingApi(api_client)
-                # 只回覆已記錄位置
-                messaging_api.reply_message(
-                    ReplyMessageRequest(
-                        reply_token=event.reply_token,
-                        messages=[TextMessage(
-                            text=f"已記錄起點位置: {location['address']}\n下次規劃將從此處出發")]
-                    )
-                )
-                if line_id in trip_user_states:
-                    del trip_user_states[line_id]
-
-    except Exception as e:
-        app.logger.error(f"處理位置訊息時時發生錯誤: {str(e)}")
-        try:
-            with ApiClient(configuration) as api_client:
-                messaging_api = MessagingApi(api_client)
-                messaging_api.reply_message(
-                    ReplyMessageRequest(
-                        reply_token=event.reply_token,
-                        messages=[TextMessage(text="處理位置訊息時發生錯誤，請稍後再試")]
-                    )
-                )
-        except Exception as inner_e:
-            app.logger.error(f"Error sending error message: {str(inner_e)}")
-
 
 @handler.add(MessageEvent, message=TextMessageContent)
 def handle_message(event):
@@ -362,14 +310,33 @@ def handle_message(event):
 def handle_location(event):
     """處理用戶發送的位置訊息"""
     try:
-        with ApiClient(configuration) as api_client:
-            messaging_api = MessagingApi(api_client)
-            scenario_handler = ScenarioHandler(messaging_api, config, app.logger)
-            
-            # 檢查用戶是否在等待位置狀態
-            user_id = event.source.user_id
-            if user_id in user_states and user_states[user_id] == "waiting_for_location":
+        # 檢查用戶是否在等待位置狀態
+        user_id = event.source.user_id
+        if user_id in user_states and user_states[user_id] == "waiting_for_location":
+            with ApiClient(configuration) as api_client:
+                messaging_api = MessagingApi(api_client)
+                scenario_handler = ScenarioHandler(messaging_api, config, app.logger)
                 scenario_handler.handle_location(event)
+
+        # -----以下為旅遊推薦-------------------------------
+        line_id = event.source.user_id
+        if line_id in trip_user_states and trip_user_states[line_id] == "waiting_location":
+            # 準備位置資訊
+            location = {
+                "lat": event.message.latitude,
+                "lon": event.message.longitude,
+                "address": event.message.address,
+                "time": datetime.now(ZoneInfo('Asia/Taipei'))
+            }
+            # 儲存到MongoDB
+            trip_db.update_user_location(line_id, location)
+            
+            with ApiClient(configuration) as api_client:
+                messaging_api = MessagingApi(api_client)
+                command_handler = CommandHandler(messaging_api, app.logger)
+                command_handler.handle_trip_command(event, None, line_id)
+
+            del trip_user_states[line_id]
     except Exception as e:
         app.logger.error(f"處理位置訊息時發生錯誤: {str(e)}")
         try:
