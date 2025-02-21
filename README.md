@@ -1,4 +1,4 @@
-# 🌏 Travel Router | Tibame Project
+# 🌏 Travel Router - 路遊憩 | Tibame Project
 
 <div align="center">
 
@@ -6,9 +6,13 @@
 ![Build](https://img.shields.io/badge/build-passing-brightgreen)
 ![Team](https://img.shields.io/badge/team-Tibame-orange)
 
-*LINE AI AGENT : 旅遊自動化推薦助手 - **路遊憩***
-
+***LINE AI AGENT** : 旅遊自動化推薦助手 - **路遊憩***
 </div>
+
+- 加入我們的 LINE BOT : https://line.me/R/ti/p/@645smycm
+- 專案報告影片 : https://youtu.be/ELtkfRXBCJk
+- 專案 DEMO 影片 : https://youtu.be/dYxGXck1jSs
+- 專案簡報 : https://oqg-primary-prod-content.s3.us-east-1.amazonaws.com/uploads/pdf/1740128607092_67b8414f96f8d.pdf
 
 ## 📋 專案概述
 
@@ -31,19 +35,21 @@
 
 | 負責人 | 負責範圍 | 狀態 |
 |:---|:---|:---:|
-| PonPon | Line 端、LLM 端 | 🟢 |
-| 石頭 | 向量搜尋端 | 🟢 |
+| 胤鵬 | Line 端、LLM 端 | 🟢 |
+| 石頭 | 向量搜索端 | 🟢 |
+| 程珣 | 向量資料庫建置 | 🟢 |
 | 瑜庭 | 關聯式搜尋端 | 🟢 |
-| 啓舜 | 旅遊演算法、main_trip.py | 🟢 |
+| 啓舜 | 旅遊演算法、旅遊問答系統 | 🟢 |
 
 ### 情境搜尋團隊
 
 | 負責人 | 負責範圍 | 狀態 |
 |:---|:---|:---:|
-| PonPon | Line 端、LLM 端 | 🟢 |
-| 石頭 | 向量搜尋端 | 🟢 |
-| 瑜庭 | 關聯式搜尋端、情境搜尋演算法 | 🟢 |
-| 家偉 | main_plan.py | 🟢 |
+| 胤鵬 | Line 端、LLM 端 | 🟢 |
+| 石頭 | 向量搜尋端、情境搜索演算法 | 🟢 |
+| 程珣 | 向量資料庫建置 | 🟢 |
+| 瑜庭 | 關聯式搜尋端 | 🟢 |
+| 家偉 | 情境搜索問答系統 | 🟢 |
 
 ## 🌳 分支管理
 
@@ -72,11 +78,11 @@
 ```
 integration/
 ├── feature/
-│   ├── line/      🌐 [PonPon]  - Line 端開發
-│   ├── llm/       🤖 [ABBY]    - LLM 端開發
+│   ├── line/      🌐 [胤鵬]    - Line 端開發
+│   ├── llm/       🤖 [胤鵬]    - LLM 端開發
 │   ├── retrieval/ 🔍 [石頭]    - 向量搜尋
 │   ├── sql/       💾 [瑜庭]    - 關聯式搜尋
-│   ├── plan/      📋 [瑜庭]    - 情境搜尋演算法
+│   ├── plan/      📋 [石頭]    - 情境搜尋演算法
 │   └── trip/      🚗 [啓舜]    - 旅遊演算法
 └── main/
     ├── main_plan/ 📊 [家偉]    - 情境搜尋主程式
@@ -123,5 +129,6 @@ project-root/
 詳細的接口文件與負責人資訊請參考：
 [![文件連結](https://img.shields.io/badge/📄_接口文件-點擊查看-blue)](https://docs.google.com/presentation/d/18xqwSCuFtxsEjBkQ4jkxNkvXWN2dcOt_0aOsSer9k_g/edit#slide=id.g32640ae6244_1_32)
 
-### 分支管理示意圖
-![分支管理示意圖](https://github.com/user-attachments/assets/df3bc631-eb14-4bb9-bf7e-420841cc77f9)
+### 分工表
+![分工表](https://hackmd-prod-images.s3-ap-northeast-1.amazonaws.com/uploads/upload_c38e2e7ca06bd488737b2faff9017342.png?AWSAccessKeyId=AKIA3XSAAW6AWSKNINWO&Expires=1740130488&Signature=boR3oCvz4iMuBrjuQfkod4muDws%3D)
+
