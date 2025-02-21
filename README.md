@@ -6,7 +6,7 @@
 ![Build](https://img.shields.io/badge/build-passing-brightgreen)
 ![Team](https://img.shields.io/badge/team-Tibame-orange)
 
-*AI AGENT自動化推薦助手*
+*LINE AI AGENT : 旅遊自動化推薦助手 - **路遊憩***
 
 </div>
 
@@ -15,6 +15,15 @@
 本專案包含兩大核心系統：
 - 🚗 旅遊演算法系統：智能路線規劃
 - 🎯 情境搜尋系統：精準景點推薦
+
+## ⚙️ 系統架構
+- **上方** :
+
+  上方是我們的知識庫建置，通過 selenium 的爬蟲取下全台北 google 點位評論，並通過 ETL 處理，存入向量資料庫 Qdrant與關聯式資料庫 Cloud SQL
+- **下方** :
+
+  下方是我們的混和推薦系統，從左邊開始由 user 的 query 傳遞至 LLM 做提問增強，再串接 jina embeddings 將文字向量化處理，並對向量資料庫內容作餘弦相似度比對，最後再與關聯式資料庫做類型匹配，輸出我們的超決推薦。在最右邊可以看到我們與 mongoDB 做溝通，整合使用者歷史聊天紀錄與回饋做推薦系統的增強。
+![系統架構](https://hackmd-prod-images.s3-ap-northeast-1.amazonaws.com/uploads/upload_36fe1bbd8a4bc6cd4ba4904913cf225f.jpg?AWSAccessKeyId=AKIA3XSAAW6AWSKNINWO&Expires=1740126101&Signature=HB3SowHyooPiY6U40AsLhDUOGjc%3D)
 
 ## 👥 團隊分工
 
