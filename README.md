@@ -27,7 +27,7 @@
 - **下方** :
 
   下方是我們的混和推薦系統，從左邊開始由 user 的 query 傳遞至 LLM 做提問增強，再串接 jina embeddings 將文字向量化處理，並對向量資料庫內容作餘弦相似度比對，最後再與關聯式資料庫做類型匹配，輸出我們的超決推薦。在最右邊可以看到我們與 mongoDB 做溝通，整合使用者歷史聊天紀錄與回饋做推薦系統的增強。
-![系統架構](https://hackmd-prod-images.s3-ap-northeast-1.amazonaws.com/uploads/upload_36fe1bbd8a4bc6cd4ba4904913cf225f.jpg?AWSAccessKeyId=AKIA3XSAAW6AWSKNINWO&Expires=1740126101&Signature=HB3SowHyooPiY6U40AsLhDUOGjc%3D)
+![簡報v1_程珣](https://github.com/user-attachments/assets/0a219b4a-d833-41b3-9657-db8f276bbaa8)
 
 ## 👥 團隊分工
 
@@ -130,5 +130,5 @@ project-root/
 [![文件連結](https://img.shields.io/badge/📄_接口文件-點擊查看-blue)](https://docs.google.com/presentation/d/18xqwSCuFtxsEjBkQ4jkxNkvXWN2dcOt_0aOsSer9k_g/edit#slide=id.g32640ae6244_1_32)
 
 ### 分工表
-![分工表](https://hackmd-prod-images.s3-ap-northeast-1.amazonaws.com/uploads/upload_c38e2e7ca06bd488737b2faff9017342.png?AWSAccessKeyId=AKIA3XSAAW6AWSKNINWO&Expires=1740130488&Signature=boR3oCvz4iMuBrjuQfkod4muDws%3D)
+![image](https://github.com/user-attachments/assets/5433077c-659a-463d-b9f5-8a80c6d8aa41)
 
